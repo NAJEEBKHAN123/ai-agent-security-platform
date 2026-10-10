@@ -438,19 +438,19 @@ export default function App() {
         const agentMsg = {
           id: Date.now() + 1,
           sender: 'agent',
-          text: data.reply,
-          tools: data.tools_executed || [],
+          text: data.response || data.reply || (data.blocked ? "Request was blocked by defensive perimeter." : ""),
+          tools: data.tools_invoked || data.tools_executed || [],
           security: {
-            risk_score: data.security_evaluation?.risk_score ?? 0,
-            risk_level: data.security_evaluation?.risk_level ?? 'Safe',
-            decision: data.security_evaluation?.decision ?? 'Allowed',
-            blocked: data.security_evaluation?.blocked ?? false,
-            output_redacted: data.security_evaluation?.output_redacted ?? false,
-            threat_reasons: data.security_evaluation?.threat_reasons ?? [],
-            score_breakdown: data.security_evaluation?.score_breakdown ?? [],
-            event_id: data.security_evaluation?.event_id
+            risk_score: data.risk_score ?? data.security_evaluation?.risk_score ?? 0,
+            risk_level: data.risk_level ?? data.security_evaluation?.risk_level ?? 'Safe',
+            decision: data.decision ?? data.security_evaluation?.decision ?? 'Allowed',
+            blocked: data.blocked ?? data.security_evaluation?.blocked ?? false,
+            output_redacted: data.output_redacted ?? data.security_evaluation?.output_redacted ?? false,
+            threat_reasons: data.threat_reasons ?? data.security_evaluation?.threat_reasons ?? [],
+            score_breakdown: data.score_breakdown ?? data.security_evaluation?.score_breakdown ?? [],
+            event_id: data.event_id ?? data.security_evaluation?.event_id
           },
-          mode: data.mode,
+          mode: data.model_mode || data.mode,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setMessages(prev => [...prev, agentMsg]);
