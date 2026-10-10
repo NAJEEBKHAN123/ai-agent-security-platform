@@ -4,8 +4,24 @@ import {
   Terminal, Bot, Send, Calculator, FileText, Search, User, Sparkles, 
   RefreshCw, LogOut, Cpu, ArrowRight, AlertTriangle, ShieldAlert,
   ChevronDown, ChevronUp, Database, Sliders, EyeOff, ShieldCheck,
-  Clock, Check, X, Filter, History, Activity
+  Clock, Check, X, Filter, History, Activity, BarChart3, Download,
+  TrendingUp, AlertOctagon, CheckCircle
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from 'recharts';
 
 const API_BASE = 'http://127.0.0.1:8000';
 
@@ -19,14 +35,18 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Tab State: 'chat' | 'policies' | 'approvals' | 'events'
-  const [activeTab, setActiveTab] = useState('chat');
+  // Tab State: 'chat' | 'dashboard' | 'policies' | 'approvals' | 'events'
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [policies, setPolicies] = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
 
+  // Dashboard Stats State (Module 8)
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   // Human Approvals State (Module 7)
   const [approvals, setApprovals] = useState([]);
-  const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
+  const [approvalFilter, setApprovalFilter] = useState('all');
   const [loadingApprovals, setLoadingApprovals] = useState(false);
   const [decisionNotes, setDecisionNotes] = useState({});
   const [processingApprovalId, setProcessingApprovalId] = useState(null);
@@ -42,7 +62,7 @@ export default function App() {
     {
       id: 1,
       sender: 'agent',
-      text: "Hello! I am your enterprise AI agent protected by the AI Agent Security Platform (Steps 1–5 Active).\n\n• Perimeter Guard: Real-time Prompt Injection Scanner & Weighted 0–100 Risk Engine.\n• Access Guard: Role-Based Tool Access Control Policies.\n• Data Guard: Automated Synthetic Secret Redaction.\n• Governance: Human-in-the-Loop Approval Queue & SOC Audit Logging.",
+      text: "Hello! I am your enterprise AI agent protected by the AI Agent Security Platform (Steps 1–6 Active).\n\n• Perimeter Guard: Real-time Prompt Injection Scanner & Weighted 0–100 Risk Engine.\n• Access Guard: Role-Based Tool Access Control Policies.\n• Data Guard: Automated Synthetic Secret Redaction.\n• Governance: Human-in-the-Loop Approval Queue & SOC Audit Logging.\n• Observability: SOC Metrics Dashboard & Threat Visualizations (Module 8).",
       tools: [],
       security: {
         risk_score: 0.0,
@@ -112,6 +132,25 @@ export default function App() {
     fetchUserData();
   }, [token]);
 
+  // Fetch Dashboard Stats
+  const fetchStats = async () => {
+    if (!token) return;
+    try {
+      setLoadingStats(true);
+      const res = await fetch(`${API_BASE}/api/v1/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch dashboard stats:", e);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   // Fetch Approvals
   const fetchApprovals = async () => {
     if (!token) return;
@@ -159,7 +198,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (activeTab === 'approvals') {
+    if (activeTab === 'dashboard') {
+      fetchStats();
+    } else if (activeTab === 'approvals') {
       fetchApprovals();
     } else if (activeTab === 'events') {
       fetchEvents();
@@ -255,7 +296,8 @@ export default function App() {
         };
         setMessages(prev => [...prev, agentMsg]);
 
-        // Auto-refresh approvals count if pending approval created
+        // Auto-refresh stats & approvals
+        fetchStats();
         if (data.decision === 'Pending Approval') {
           fetchApprovals();
         }
@@ -297,6 +339,7 @@ export default function App() {
       });
       if (res.ok) {
         await fetchApprovals();
+        await fetchStats();
       } else {
         const err = await res.json();
         alert(`Approval error: ${err.detail || 'Failed to submit decision'}`);
@@ -306,6 +349,11 @@ export default function App() {
     } finally {
       setProcessingApprovalId(null);
     }
+  };
+
+  // Download CSV export
+  const downloadAuditCSV = () => {
+    window.open(`${API_BASE}/api/v1/dashboard/export`, '_blank');
   };
 
   const toggleThreatDetails = (msgId) => {
@@ -359,26 +407,36 @@ export default function App() {
             <h1 className="font-bold text-base tracking-wide text-white flex items-center gap-2">
               AI Agent Security Platform
               <span className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-mono">
-                Step 5: HITL Approvals & SOC Logs
+                Step 6: SOC Visual Analytics
               </span>
             </h1>
             <p className="text-xs text-slate-400">
-              Prompt Injection Defense &bull; RBAC Policies &bull; Human-in-the-Loop &bull; SOC Audit Trail
+              Prompt Injection Defense &bull; RBAC Policies &bull; Human-in-the-Loop &bull; SOC Visual Analytics
             </p>
           </div>
         </div>
 
-        {/* Status badges & Navigation */}
+        {/* Navigation Tabs */}
         <div className="flex items-center gap-3">
           {currentUser && (
             <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
               <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
+                  activeTab === 'dashboard' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>SOC Dashboard</span>
+              </button>
+              <button
                 onClick={() => setActiveTab('chat')}
-                className={`px-3 py-1 rounded-md transition font-medium ${
+                className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
                   activeTab === 'chat' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Agent Chat
+                <Bot className="w-3.5 h-3.5" />
+                <span>Agent Chat</span>
               </button>
               <button
                 onClick={() => setActiveTab('policies')}
@@ -452,16 +510,20 @@ export default function App() {
               <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  Step 5 Architecture Ready
+                  Step 6 Architecture Ready
                 </h2>
                 <div className="space-y-2.5 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>Real-Time SOC Analytics Dashboard & Threat Visualizations (Module 8)</span>
+                  </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>Human-in-the-Loop Sensitive Action Approval Queue (Module 7)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>SOC Security Event Audit Trail with RBAC Scoping (Module 5)</span>
+                    <span>SOC Security Event Audit Trail with CSV Export (Module 5)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
@@ -469,11 +531,7 @@ export default function App() {
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Real-Time Output Security & Secret Redaction (Module 6)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Automated Test Suite Passing: 36/36 Unit, HITL & SOC Tests</span>
+                    <span>Automated Test Suite Passing: 38/38 Unit, SOC & Metric Tests</span>
                   </div>
                 </div>
               </div>
@@ -490,7 +548,7 @@ export default function App() {
                   >
                     <div>
                       <div className="font-semibold text-slate-200">analyst@agentsec.com</div>
-                      <div className="text-slate-500">Role: REVIEWER (Approval Authority & Audit Access)</div>
+                      <div className="text-slate-500">Role: REVIEWER (SOC Analytics & Approvals)</div>
                     </div>
                     <span className="text-cyan-400 font-mono">Fill &rarr;</span>
                   </button>
@@ -510,7 +568,7 @@ export default function App() {
                   >
                     <div>
                       <div className="font-semibold text-slate-200">user@agentsec.com</div>
-                      <div className="text-slate-500">Role: USER (Standard Client - Blocked from Sensitive Tools)</div>
+                      <div className="text-slate-500">Role: USER (Standard Client Agent Account)</div>
                     </div>
                     <span className="text-emerald-400 font-mono">Fill &rarr;</span>
                   </button>
@@ -565,6 +623,179 @@ export default function App() {
                   {authLoading ? 'Signing in...' : 'Sign In & Open Agent Console'}
                 </button>
               </form>
+            </div>
+          </div>
+        ) : activeTab === 'dashboard' ? (
+          /* SOC Visual Analytics Dashboard (Module 8) */
+          <div className="col-span-12 space-y-6">
+            {/* Top Metrics Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Total Queries Evaluated</span>
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-white">
+                  {stats ? stats.total_events : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Real-time telemetry stream</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Blocked Attack Rate</span>
+                  <AlertOctagon className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-red-400 flex items-baseline gap-2">
+                  <span>{stats ? `${stats.block_rate_pct}%` : '--'}</span>
+                  <span className="text-xs text-slate-400 font-normal">({stats?.blocked_events || 0} blocked)</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Perimeter interception rate</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Avg Risk Score (0-100)</span>
+                  <TrendingUp className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-amber-400">
+                  {stats ? stats.avg_risk_score.toFixed(1) : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Synergy weighted formula</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Pending HITL Approvals</span>
+                  <Clock className="w-4 h-4 text-purple-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-purple-400">
+                  {stats ? stats.pending_approvals : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Awaiting reviewer action</div>
+              </div>
+            </div>
+
+            {/* Visual Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Risk Level Distribution (Pie Chart) */}
+              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Risk Level Distribution
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-mono">0–100 Scale</span>
+                </div>
+
+                <div className="h-64 w-full">
+                  {stats && stats.risk_distribution ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.risk_distribution}
+                          dataKey="count"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={3}
+                        >
+                          {stats.risk_distribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Threat Categories Breakdown (Bar Chart) */}
+              <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    Threat Categories Intercepted
+                  </h3>
+                  <button
+                    onClick={fetchStats}
+                    className="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Refresh
+                  </button>
+                </div>
+
+                <div className="h-64 w-full">
+                  {stats && stats.threat_breakdown ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats.threat_breakdown} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                        <XAxis
+                          dataKey="category"
+                          stroke="#64748b"
+                          fontSize={10}
+                          angle={-15}
+                          textAnchor="end"
+                          interval={0}
+                        />
+                        <YAxis stroke="#64748b" fontSize={10} allowDecimals={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
+                        />
+                        <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]}>
+                          {stats.threat_breakdown.map((entry, index) => (
+                            <Cell key={`bar-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions & CSV Export Banner */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-cyan-400" />
+                  Compliance & Security Audit Ledger Export
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Download full chronological SOC telemetry with event hashes, risk scores, and decisions for audit compliance.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition"
+                >
+                  Open Chat Console
+                </button>
+                {['reviewer', 'admin'].includes(currentUser.role) && (
+                  <button
+                    onClick={downloadAuditCSV}
+                    className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV Ledger
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : activeTab === 'policies' ? (
@@ -792,7 +1023,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Event Filters */}
+              {/* Event Filters & CSV Export */}
               <div className="flex items-center gap-3">
                 <select
                   value={eventRiskFilter}
@@ -825,6 +1056,17 @@ export default function App() {
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
+
+                {['reviewer', 'admin'].includes(currentUser.role) && (
+                  <button
+                    onClick={downloadAuditCSV}
+                    className="px-3 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition flex items-center gap-1.5"
+                    title="Download CSV"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    CSV Export
+                  </button>
+                )}
               </div>
             </div>
 
@@ -895,7 +1137,7 @@ export default function App() {
             )}
           </div>
         ) : (
-          /* Logged In: Step 5 Agent Chat Console */
+          /* Logged In: Agent Chat Console */
           <>
             {/* Left Sidebar: Session, Tools & Live Attack Simulator Chips */}
             <div className="md:col-span-4 space-y-5">
@@ -1103,7 +1345,7 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* Security Assessment Badge (Module 3 & 6) */}
+                      {/* Security Assessment Badge */}
                       {m.security && (
                         <div className="mt-3 pt-2.5 border-t border-slate-800/80">
                           <div className="flex items-center justify-between">
