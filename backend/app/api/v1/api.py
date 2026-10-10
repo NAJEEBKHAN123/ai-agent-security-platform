@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import health, auth, chat, policies, approvals, events, dashboard
+from app.api.v1 import health, auth, chat, policies, approvals, events, dashboard, simulator
 
 api_router = APIRouter()
 
@@ -10,5 +10,7 @@ api_router.include_router(policies.router)
 api_router.include_router(approvals.router)
 api_router.include_router(events.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(simulator.router)
+
 
 

@@ -2,6 +2,7 @@ import re
 import enum
 from typing import List
 from pydantic import BaseModel
+from app.security.threat_intel import threat_intel_feed
 
 
 class ThreatCategory(str, enum.Enum):
@@ -10,6 +11,7 @@ class ThreatCategory(str, enum.Enum):
     SECRET_EXTRACTION = "Confidential & System Prompt Extraction"
     DELIMITER_MANIPULATION = "Indirect Delimiter & System Tag Injection"
     UNSAFE_TOOL_COERCION = "Unsafe Tool Coercion & Probing"
+    THREAT_INTEL_IOC = "Threat Intelligence IOC Match"
 
 
 class IndicatorMatch(BaseModel):
@@ -56,7 +58,7 @@ _DETECTION_RULES = [
     {
         "category": ThreatCategory.JAILBREAK_OVERRIDE,
         "name": "safety_filter_disable_coercion",
-        "pattern": r"(?:disable|deactivate|turn\s+off|bypass)\s+(?:all\s+)?(?:your\s+)?(?:safety|content|security|ethics)\s+(?:filters|protocols|rules|guidelines)",
+        "pattern": r"(?:(?:disable[ds]?|deactivat(?:e|ed)|turn(?:ed)?\s+off|bypass(?:ed)?)\s+(?:all\s+)?(?:your\s+)?(?:safety|content|security|ethics)\s+(?:filters|protocols|rules|guidelines)|(?:with\s+)?(?:all\s+)?(?:safety|content|security|ethics)\s+(?:filters|protocols|rules|guidelines)\s+(?:disabled|deactivated|off|bypassed))",
         "weight": 50.0,
         "description": "Detected coercion attempting to disable AI security guardrails.",
     },
@@ -65,15 +67,15 @@ _DETECTION_RULES = [
     {
         "category": ThreatCategory.SECRET_EXTRACTION,
         "name": "system_prompt_leak_request",
-        "pattern": r"(?:reveal|show|print|display|tell\s+me|output|repeat|disclose)\s+(?:all\s+)?(?:your\s+)?(?:(?:hidden|internal|system|developer|confidential|secret)\s*){1,3}(?:prompt|instructions|rules|guidelines|directives)",
-        "weight": 45.0,
+        "pattern": r"(?:reveal|show|print|display|tell\s+me|output|repeat|disclose)\s+(?:all\s+)?(?:the\s+)?(?:your\s+)?(?:raw\s+)?(?:(?:hidden|internal|system|developer|confidential|secret)\s*){1,3}(?:prompt|instructions|rules|guidelines|directives)",
+        "weight": 75.0,
         "description": "Detected request attempting to leak internal system prompt or instructions.",
     },
     {
         "category": ThreatCategory.SECRET_EXTRACTION,
         "name": "secret_credentials_extraction",
         "pattern": r"(?:reveal|disclose|show|leak|output)\s+(?:all\s+)?(?:secret|credentials|api\s*key|access\s*token|password|confidential\s+data)",
-        "weight": 50.0,
+        "weight": 75.0,
         "description": "Detected attempt to extract credentials, API keys, or confidential secrets.",
     },
 
@@ -81,8 +83,8 @@ _DETECTION_RULES = [
     {
         "category": ThreatCategory.DELIMITER_MANIPULATION,
         "name": "fake_system_delimiter_tag",
-        "pattern": r"(?:###\s*(?:system|instruction|admin)|<system>|\[SYSTEM\s+INSTRUCTION\]|role:\s*system|\"role\":\s*\"system\")",
-        "weight": 40.0,
+        "pattern": r"(?:###\s*(?:system|instruction|admin)|<system>|\[SYSTEM\s+INSTRUCTION\]|role:\s*system|\"role\":\s*\"system\"|---\s*(?:BEGIN|START)\s+SYSTEM|\[SYSTEM\])",
+        "weight": 75.0,
         "description": "Detected adversarial structural markup masquerading as authoritative system role.",
     },
     {
@@ -132,6 +134,20 @@ class PromptInjectionDetector:
                 )
                 total_weight += rule["weight"]
 
+        # 3. Threat Intelligence IOC Feed Check (Module 9)
+        ioc_matches = threat_intel_feed.scan(clean_text)
+        for ioc in ioc_matches:
+            matched_indicators.append(
+                IndicatorMatch(
+                    category=ThreatCategory.THREAT_INTEL_IOC,
+                    pattern_name=f"ioc_{ioc.ioc_type}",
+                    matched_text=ioc.indicator,
+                    weight=75.0,
+                    description=f"Threat Intelligence IOC hit ({ioc.ioc_type}): {ioc.threat_description}",
+                )
+            )
+            total_weight += 75.0
+
         # Flagged if any threat indicator matched
         is_flagged = len(matched_indicators) > 0
 
@@ -147,6 +163,8 @@ class PromptInjectionDetector:
             total_threat_weight=total_weight,
             summary=summary,
         )
+
+    analyze = inspect_input
 
 
 # Global Detector Instance

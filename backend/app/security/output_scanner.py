@@ -46,7 +46,7 @@ _SENSITIVE_PATTERNS = [
     # 4. Cryptographic Private Keys
     {
         "type": "Cryptographic Private Key",
-        "pattern": r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----",
+        "pattern": r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----(?:[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----)?",
         "redacted_as": "[REDACTED_KEY: Private Key Block]",
         "severity": "Critical",
     },
