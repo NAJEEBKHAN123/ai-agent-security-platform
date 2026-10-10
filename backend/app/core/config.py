@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     # Database URL: SQLite default (zero-setup), fully compatible with PostgreSQL
     DATABASE_URL: str = "sqlite:///./security_platform.db"
 
-    # AI Configuration
-    MOCK_MODE: bool = True
+    # AI Configuration (Groq & Mock Fallback)
+    MOCK_MODE: bool = False
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_API_URL: str = "https://api.groq.com/openai/v1/chat/completions"
     OPENAI_API_KEY: str = ""
 
     # CORS Configuration

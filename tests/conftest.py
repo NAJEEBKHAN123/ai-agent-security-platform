@@ -5,9 +5,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base, get_db
-from app.main import app
 from app.models.user import User, UserRole
 from app.core.security import get_password_hash
+from app.core.config import settings
+from app.main import app
+
+# Enforce deterministic mock mode for lightning-fast offline unit tests
+settings.MOCK_MODE = True
 
 TEST_DB = "./test_suite.db"
 test_engine = create_engine(
