@@ -632,172 +632,122 @@ export default function App() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[160px]" />
         </div>
 
-        <div className="max-w-6xl w-full relative z-10 space-y-8 my-auto">
-          {/* Hero Header */}
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
+        <div className="max-w-6xl w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center my-auto py-6">
+          {/* Left Column: Platform Hero & 1-Click Demo Personas */}
+          <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/25 shadow-[0_0_24px_rgba(34,211,238,0.15)] text-cyan-300 text-xs font-mono font-semibold tracking-wider uppercase">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-              Obsidian SOC • Autonomous AI Agent Security Platform
+              Obsidian SOC • Autonomous AI Agent Security
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
               Zero-Trust Defense for <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">Agentic AI Workflows</span>
             </h1>
 
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-              Production-grade runtime firewall defending against Prompt Injections, Unsafe Tool Escalation, and Data Exfiltration with human-in-the-loop oversight.
+            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+              Production-grade runtime security firewall defending against Prompt Injections, Unsafe Tool Escalation, and Secret Exfiltration with Human-in-the-Loop oversight.
             </p>
-          </div>
 
-          {/* 3 VIP Persona Cards - 1-Click Launch */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Persona 1: Analyst */}
-            <div className="bg-[#0D111A]/90 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden group hover:border-cyan-400/50 transition-all flex flex-col justify-between">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                    <ShieldAlert className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                    REVIEWER
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">Security Analyst</h3>
-                  <p className="text-xs font-mono text-cyan-400/80 mt-0.5">analyst@agentsec.com</p>
-                  <p className="text-sm text-slate-400 mt-2.5 leading-relaxed">
-                    Full authority to review pending approvals, inspect SOC telemetry, and execute the 16-vector benchmark suite.
-                  </p>
-                </div>
-                <div className="space-y-1.5 pt-2 text-xs text-slate-300">
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Human-in-the-Loop Approval Queue</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> 16-Vector Defense Benchmark</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Real-time SOC Threat Analytics</div>
-                </div>
+            {/* Quick 1-Click Launch Persona Chips */}
+            <div className="space-y-3 pt-2">
+              <div className="text-xs font-mono uppercase font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Play className="w-3.5 h-3.5 text-cyan-400" /> Or 1-Click Quick Launch as Demo Persona:
               </div>
 
-              <div className="pt-6 mt-6 border-t border-white/10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
+                  type="button"
                   onClick={() => loginAsPersona('analyst@agentsec.com', 'AnalystPass123!')}
                   disabled={authLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(34,211,238,0.3)] transition active:scale-[0.98] cursor-pointer"
+                  className="p-3 rounded-xl bg-[#0D111A]/90 hover:bg-[#131926] border border-cyan-500/30 text-left transition flex flex-col justify-between cursor-pointer group active:scale-[0.98] shadow-lg"
                 >
-                  <span>Launch as Analyst</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Persona 2: Admin */}
-            <div className="bg-[#0D111A]/90 backdrop-blur-2xl border border-purple-500/30 rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden group hover:border-purple-400/50 transition-all flex flex-col justify-between">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                    <Key className="w-6 h-6" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">REVIEWER</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
                   </div>
-                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    ADMIN
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">Security Admin</h3>
-                  <p className="text-xs font-mono text-purple-400/80 mt-0.5">admin@agentsec.com</p>
-                  <p className="text-sm text-slate-400 mt-2.5 leading-relaxed">
-                    Unrestricted control over tool RBAC policies, global configuration overrides, and system audit exports.
-                  </p>
-                </div>
-                <div className="space-y-1.5 pt-2 text-xs text-slate-300">
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Tool-Level Policy RBAC Editor</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-400" /> System Overrides & Approvals</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Compliance Audit CSV Export</div>
-                </div>
-              </div>
+                  <div className="mt-2 text-xs font-bold text-white">Analyst Account</div>
+                  <div className="text-[10px] font-mono text-slate-400">Approvals & SOC</div>
+                </button>
 
-              <div className="pt-6 mt-6 border-t border-white/10">
                 <button
+                  type="button"
                   onClick={() => loginAsPersona('admin@agentsec.com', 'AdminPass123!')}
                   disabled={authLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(168,85,247,0.3)] transition active:scale-[0.98] cursor-pointer"
+                  className="p-3 rounded-xl bg-[#0D111A]/90 hover:bg-[#131926] border border-purple-500/30 text-left transition flex flex-col justify-between cursor-pointer group active:scale-[0.98] shadow-lg"
                 >
-                  <span>Launch as Admin</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">ADMIN</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div className="mt-2 text-xs font-bold text-white">Admin Account</div>
+                  <div className="text-[10px] font-mono text-slate-400">Full RBAC Policies</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => loginAsPersona('user@agentsec.com', 'UserPass123!')}
+                  disabled={authLoading}
+                  className="p-3 rounded-xl bg-[#0D111A]/90 hover:bg-[#131926] border border-emerald-500/30 text-left transition flex flex-col justify-between cursor-pointer group active:scale-[0.98] shadow-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">USER</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div className="mt-2 text-xs font-bold text-white">Standard User</div>
+                  <div className="text-[10px] font-mono text-slate-400">Restricted Tools</div>
                 </button>
               </div>
             </div>
 
-            {/* Persona 3: User */}
-            <div className="bg-[#0D111A]/90 backdrop-blur-2xl border border-emerald-500/30 rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden group hover:border-emerald-400/50 transition-all flex flex-col justify-between">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                    <User className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    USER
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">Standard Agent Client</h3>
-                  <p className="text-xs font-mono text-emerald-400/80 mt-0.5">user@agentsec.com</p>
-                  <p className="text-sm text-slate-400 mt-2.5 leading-relaxed">
-                    Standard consumer role. Restricted by RBAC policy from accessing sensitive tools like `record_lookup`.
-                  </p>
-                </div>
-                <div className="space-y-1.5 pt-2 text-xs text-slate-300">
-                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Arithmetic & Document Summary</div>
-                  <div className="flex items-center gap-2"><X className="w-4 h-4 text-red-400" /> Blocked: Database Records</div>
-                  <div className="flex items-center gap-2"><X className="w-4 h-4 text-red-400" /> Blocked: Credential Rotation</div>
-                </div>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-white/10">
-                <button
-                  onClick={() => loginAsPersona('user@agentsec.com', 'UserPass123!')}
-                  disabled={authLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(16,185,129,0.3)] transition active:scale-[0.98] cursor-pointer"
-                >
-                  <span>Launch as Standard User</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-500 pt-3 border-t border-white/10">
+              <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5 text-cyan-400" /> Backend: FastAPI (127.0.0.1:8000)</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> 41 / 41 Tests Passing</span>
             </div>
           </div>
 
-          {/* DUAL TABBED AUTHENTICATION PORTAL (SIGN IN & SIGN UP) */}
-          <div className="bg-[#0D111A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl max-w-2xl mx-auto space-y-5">
-            {/* Tab Selector */}
-            <div className="flex bg-[#07090E] p-1.5 rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => { setAuthMode('login'); setAuthError(''); setRegSuccess(''); }}
-                className={`flex-1 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
-                  authMode === 'login'
-                    ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.3)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <LockKeyhole className="w-4 h-4" />
-                <span>1. Sign In (Existing User)</span>
-              </button>
+          {/* Right Column: FRONT-AND-CENTER DUAL AUTHENTICATION CARD */}
+          <div className="lg:col-span-6 bg-[#0D111A]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.8)] space-y-6">
+            {/* Header / Tab Switcher */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono uppercase font-bold tracking-wider text-slate-400 flex items-center gap-2">
+                  <LockKeyhole className="w-4 h-4 text-cyan-400" /> Authentication Gateway
+                </span>
+                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> SQLite Active
+                </span>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => { setAuthMode('signup'); setAuthError(''); setRegSuccess(''); }}
-                className={`flex-1 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
-                  authMode === 'signup'
-                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                <span>2. Sign Up (Create New Account)</span>
-              </button>
+              <div className="flex bg-[#07090E] p-1.5 rounded-2xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setRegSuccess(''); }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+                    authMode === 'login'
+                      ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.3)]'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LockKeyhole className="w-4 h-4" />
+                  <span>1. Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('signup'); setAuthError(''); setRegSuccess(''); }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+                    authMode === 'signup'
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>2. Sign Up</span>
+                </button>
+              </div>
             </div>
 
-            {/* Error or Success Notifications */}
+            {/* Error & Success Banners */}
             {authError && (
               <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -812,7 +762,7 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB A: SIGN IN FORM */}
+            {/* TAB 1: SIGN IN FORM */}
             {authMode === 'login' ? (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-3">
@@ -843,7 +793,7 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-sm shadow-[0_0_24px_rgba(34,211,238,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-sm shadow-[0_0_24px_rgba(34,211,238,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                   <span>{authLoading ? 'Verifying Credentials…' : 'Sign In to Agent Platform'}</span>
@@ -851,13 +801,13 @@ export default function App() {
 
                 <div className="pt-2 text-center text-xs font-mono text-slate-400">
                   Quick-Fill Demo Credentials:{' '}
-                  <button type="button" onClick={() => fillCredentials('analyst@agentsec.com', 'AnalystPass123!')} className="text-cyan-400 hover:underline mx-1 cursor-pointer">Analyst</button>•
-                  <button type="button" onClick={() => fillCredentials('admin@agentsec.com', 'AdminPass123!')} className="text-purple-400 hover:underline mx-1 cursor-pointer">Admin</button>•
-                  <button type="button" onClick={() => fillCredentials('user@agentsec.com', 'UserPass123!')} className="text-emerald-400 hover:underline mx-1 cursor-pointer">User</button>
+                  <button type="button" onClick={() => fillCredentials('analyst@agentsec.com', 'AnalystPass123!')} className="text-cyan-400 hover:underline mx-1 cursor-pointer font-bold">Analyst</button>•
+                  <button type="button" onClick={() => fillCredentials('admin@agentsec.com', 'AdminPass123!')} className="text-purple-400 hover:underline mx-1 cursor-pointer font-bold">Admin</button>•
+                  <button type="button" onClick={() => fillCredentials('user@agentsec.com', 'UserPass123!')} className="text-emerald-400 hover:underline mx-1 cursor-pointer font-bold">User</button>
                 </div>
               </form>
             ) : (
-              /* TAB B: SIGN UP (REGISTRATION) FORM */
+              /* TAB 2: SIGN UP (CREATE NEW ACCOUNT) FORM */
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
@@ -867,7 +817,7 @@ export default function App() {
                       value={regFullName}
                       onChange={(e) => setRegFullName(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition"
-                      placeholder="e.g. Officer Alex Vance"
+                      placeholder="Officer Alex Vance"
                     />
                   </div>
                   <div>
@@ -877,7 +827,7 @@ export default function App() {
                       onChange={(e) => setRegRole(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition cursor-pointer"
                     >
-                      <option value="user">USER (Standard Agent Client)</option>
+                      <option value="user">USER (Standard Client)</option>
                       <option value="reviewer">REVIEWER (Security Analyst)</option>
                       <option value="admin">ADMIN (Full Permissions)</option>
                     </select>
@@ -892,7 +842,7 @@ export default function App() {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition"
-                    placeholder="new_analyst@agentsec.com"
+                    placeholder="new_user@agentsec.com"
                   />
                 </div>
 
@@ -912,25 +862,13 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-sm shadow-[0_0_24px_rgba(168,85,247,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-sm shadow-[0_0_24px_rgba(168,85,247,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
                   <span>{authLoading ? 'Creating Account…' : 'Register Account & Authenticate'}</span>
                 </button>
               </form>
             )}
-
-            {/* System Engine Status Footer */}
-            <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
-              <div className="flex items-center gap-2">
-                <Server className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Backend Engine: FastAPI • SQLite Persistence</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400">41 / 41 Automated Tests Passing</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
