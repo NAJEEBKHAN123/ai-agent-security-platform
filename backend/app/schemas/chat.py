@@ -20,4 +20,12 @@ class ChatResponse(BaseModel):
     tools_invoked: List[ToolInvocationSchema] = []
     model_mode: str = "mock"
     user_email: str
+    # Security Inspection & Risk Scoring Metadata (Modules 2 & 3)
+    risk_score: float = 0.0
+    risk_level: str = "Safe"
+    decision: str = "Allowed"
+    blocked: bool = False
+    threat_reasons: List[str] = []
+    score_breakdown: List[str] = []
+    event_id: Optional[int] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
