@@ -95,10 +95,10 @@ def test_chat_document_intent(client):
 
 
 def test_chat_record_lookup_intent(client):
-    """Verify chat requesting record lookup queries the directory."""
+    """Verify authorized chat requesting record lookup queries the directory."""
     login_resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "user@agentsec.com", "password": "UserPass123!"},
+        json={"email": "analyst@agentsec.com", "password": "AnalystPass123!"},
     )
     token = login_resp.json()["access_token"]
 

@@ -58,6 +58,10 @@ def setup_test_db():
                 is_active=True,
             ))
         db.commit()
+
+        # Seed baseline tool policies in test DB
+        from app.security.policy_engine import init_policies
+        init_policies(db)
     finally:
         db.close()
 

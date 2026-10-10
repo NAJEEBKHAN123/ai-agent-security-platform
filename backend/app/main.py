@@ -31,6 +31,10 @@ def init_db():
                     is_active=True,
                 ))
             db.commit()
+            
+        # Seed baseline tool policies
+        from app.security.policy_engine import init_policies
+        init_policies(db)
     finally:
         db.close()
 

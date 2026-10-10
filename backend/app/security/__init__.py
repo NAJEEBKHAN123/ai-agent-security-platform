@@ -14,6 +14,18 @@ from app.security.pipeline import (
     security_pipeline,
     SecurityPipeline,
 )
+from app.security.policy_engine import (
+    policy_engine,
+    PolicyEngine,
+    PolicyDecision,
+    init_policies,
+)
+from app.security.output_scanner import (
+    output_scanner,
+    OutputSecurityScanner,
+    OutputScanResult,
+    LeakIndicator,
+)
 
 __all__ = [
     "injection_detector",
@@ -26,4 +38,12 @@ __all__ = [
     "RiskEvaluation",
     "security_pipeline",
     "SecurityPipeline",
+    "policy_engine",
+    "PolicyEngine",
+    "PolicyDecision",
+    "init_policies",
+    "output_scanner",
+    "OutputSecurityScanner",
+    "OutputScanResult",
+    "LeakIndicator",
 ]

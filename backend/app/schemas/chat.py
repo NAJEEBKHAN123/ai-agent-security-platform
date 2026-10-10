@@ -25,6 +25,7 @@ class ChatResponse(BaseModel):
     risk_level: str = "Safe"
     decision: str = "Allowed"
     blocked: bool = False
+    output_redacted: bool = False
     threat_reasons: List[str] = []
     score_breakdown: List[str] = []
     event_id: Optional[int] = None
