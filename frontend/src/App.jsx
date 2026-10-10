@@ -5,7 +5,7 @@ import {
   RefreshCw, LogOut, Cpu, ArrowRight, AlertTriangle, ShieldAlert,
   ChevronDown, ChevronUp, Database, Sliders, EyeOff, ShieldCheck,
   Clock, Check, X, Filter, History, Activity, BarChart3, Download,
-  TrendingUp, AlertOctagon, CheckCircle, Zap, Play, Target
+  TrendingUp, AlertOctagon, CheckCircle, Zap, Play, Target, MessageSquare
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -33,8 +33,8 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Tab State: 'dashboard' | 'chat' | 'simulator' | 'policies' | 'approvals' | 'events'
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Default active tab is 'chat' (Agent Chat is always front & center)
+  const [activeTab, setActiveTab] = useState('chat');
   const [policies, setPolicies] = useState([]);
 
   // Dashboard Stats State (Module 8)
@@ -63,7 +63,7 @@ export default function App() {
     {
       id: 1,
       sender: 'agent',
-      text: "Enterprise AI Security Platform Operational (All 10 Modules Active).\n\n• Perimeter Guard: Prompt Injection Scanner & Transparent 0–100 Weighted Risk Scoring.\n• Access Control: Least-Privilege RBAC Policies on all internal Agent Tools.\n• Output Data Loss Prevention: Real-Time Synthetic Secret & Cloud Key Redaction.\n• Governance & HITL: Human-in-the-Loop Review Queue for high-risk operations.\n• SOC Observability: Visual Threat Telemetry, Audit Logs & 16-Vector Attack Simulator.",
+      text: "Enterprise AI Security Agent is active and ready.\n\n• Perimeter Guard: Real-time Prompt Injection Scanner & Weighted 0–100 Risk Engine.\n• Access Guard: Role-Based Tool Policies (`safe_calculator`, `document_summarizer`, `record_lookup`).\n• Output Guard: Automated Synthetic Secret Redaction (`DEMO_SECRET_...`).\n• Governance: Human-in-the-Loop Review Queue for sensitive actions (`credential_rotation`).",
       tools: [],
       security: {
         risk_score: 0.0,
@@ -71,7 +71,7 @@ export default function App() {
         decision: "Allowed",
         blocked: false,
         output_redacted: false,
-        threat_reasons: ["All defensive perimeters online & verified clean."],
+        threat_reasons: ["Perimeter guard initialized clean."],
         score_breakdown: []
       },
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -252,6 +252,7 @@ export default function App() {
       if (res.ok) {
         setToken(data.access_token);
         localStorage.setItem('token', data.access_token);
+        setActiveTab('chat'); // Immediately show the Agent Chat upon login!
       } else {
         setAuthError(data.detail || 'Authentication failed');
       }
@@ -322,8 +323,6 @@ export default function App() {
         };
         setMessages(prev => [...prev, agentMsg]);
 
-        // Auto-refresh stats & approvals
-        fetchStats();
         if (data.decision === 'Pending Approval') {
           fetchApprovals();
         }
@@ -434,42 +433,42 @@ export default function App() {
               AI Agent Security Platform
               <span className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-mono flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                Production Ready (10/10 Modules)
+                Live Protection
               </span>
             </h1>
             <p className="text-xs text-slate-400">
-              Perimeter Guard &bull; RBAC Policies &bull; Secret Redaction &bull; HITL Approvals &bull; 16-Vector Simulator
+              Prompt Injection Defense &bull; RBAC Policies &bull; Secret Redaction &bull; HITL Approvals &bull; SOC Dashboard
             </p>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Agent Chat is First */}
         <div className="flex items-center gap-3">
           {currentUser && (
             <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
               <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
-                  activeTab === 'dashboard' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                <span>SOC Dashboard</span>
-              </button>
-              <button
                 onClick={() => setActiveTab('chat')}
-                className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
-                  activeTab === 'chat' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-md transition font-medium flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'chat' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Bot className="w-3.5 h-3.5" />
                 <span>Agent Chat</span>
               </button>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-3 py-1.5 rounded-md transition font-medium flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'dashboard' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>SOC Dashboard</span>
+              </button>
               {['reviewer', 'admin'].includes(currentUser.role) && (
                 <button
                   onClick={() => setActiveTab('simulator')}
-                  className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
-                    activeTab === 'simulator' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`px-3 py-1.5 rounded-md transition font-medium flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'simulator' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Target className="w-3.5 h-3.5 text-red-400" />
@@ -478,8 +477,8 @@ export default function App() {
               )}
               <button
                 onClick={() => setActiveTab('policies')}
-                className={`px-3 py-1 rounded-md transition font-medium ${
-                  activeTab === 'policies' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-md transition font-medium cursor-pointer ${
+                  activeTab === 'policies' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Policies ({policies.length})
@@ -487,8 +486,8 @@ export default function App() {
               {['reviewer', 'admin'].includes(currentUser.role) && (
                 <button
                   onClick={() => setActiveTab('approvals')}
-                  className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
-                    activeTab === 'approvals' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`px-3 py-1.5 rounded-md transition font-medium flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'approvals' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <span>Approvals</span>
@@ -501,8 +500,8 @@ export default function App() {
               )}
               <button
                 onClick={() => setActiveTab('events')}
-                className={`px-3 py-1 rounded-md transition font-medium ${
-                  activeTab === 'events' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-md transition font-medium cursor-pointer ${
+                  activeTab === 'events' ? 'bg-cyan-600 text-white shadow font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Audit Logs
@@ -530,7 +529,7 @@ export default function App() {
           {currentUser && (
             <button
               onClick={handleLogout}
-              className="text-xs px-3 py-1.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition flex items-center gap-1.5 font-medium"
+              className="text-xs px-3 py-1.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition flex items-center gap-1.5 font-medium cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
@@ -590,7 +589,7 @@ export default function App() {
                 <div className="space-y-2 text-xs">
                   <button
                     onClick={() => fillCredentials('analyst@agentsec.com', 'AnalystPass123!')}
-                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between"
+                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between cursor-pointer"
                   >
                     <div>
                       <div className="font-semibold text-slate-200">analyst@agentsec.com</div>
@@ -600,7 +599,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => fillCredentials('admin@agentsec.com', 'AdminPass123!')}
-                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between"
+                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between cursor-pointer"
                   >
                     <div>
                       <div className="font-semibold text-slate-200">admin@agentsec.com</div>
@@ -610,7 +609,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => fillCredentials('user@agentsec.com', 'UserPass123!')}
-                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between"
+                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between cursor-pointer"
                   >
                     <div>
                       <div className="font-semibold text-slate-200">user@agentsec.com</div>
@@ -664,649 +663,15 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {authLoading ? 'Signing in...' : 'Sign In & Open Agent Console'}
+                  {authLoading ? 'Signing in...' : 'Sign In & Open Agent Chat'}
                 </button>
               </form>
             </div>
           </div>
-        ) : activeTab === 'simulator' ? (
-          /* 16-Vector Attack Simulator Benchmark Tab (Module 10) */
-          <div className="col-span-12 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-5 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-red-500/10 text-red-400">
-                    <Target className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-white flex items-center gap-2">
-                      Automated 16-Vector Security Test Suite (Module 10)
-                      <span className="text-[10px] bg-red-500/10 border border-red-500/30 text-red-400 px-2 py-0.5 rounded font-mono">
-                        Teacher Demonstration Benchmark
-                      </span>
-                    </h2>
-                    <p className="text-xs text-slate-400">
-                      Standardized adversarial test benchmark executing 16 attack & baseline vectors through the security perimeter.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleRunSimulator}
-                  disabled={runningSimulator}
-                  className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold text-xs flex items-center gap-2 transition disabled:opacity-50 shadow-lg cursor-pointer"
-                >
-                  <Play className={`w-3.5 h-3.5 ${runningSimulator ? 'animate-spin' : ''}`} />
-                  {runningSimulator ? 'Running 16-Vector Benchmark...' : 'Run Automated Benchmark Suite'}
-                </button>
-              </div>
-
-              {/* Benchmark Summary Metrics */}
-              {simulatorResults && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <div className="text-[10px] uppercase font-mono text-slate-500">Defense Accuracy</div>
-                    <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
-                      {simulatorResults.overall_accuracy_pct}%
-                    </div>
-                    <div className="text-[10px] text-slate-500">16 / 16 vectors passed</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <div className="text-[10px] uppercase font-mono text-slate-500">Attacks Intercepted</div>
-                    <div className="text-2xl font-bold font-mono text-cyan-400 mt-1">
-                      {simulatorResults.attacks_intercepted} / {simulatorResults.attacks_evaluated}
-                    </div>
-                    <div className="text-[10px] text-slate-500">100% Interception rate</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <div className="text-[10px] uppercase font-mono text-slate-500">Clean Baselines Passed</div>
-                    <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
-                      {simulatorResults.clean_baselines_passed} / {simulatorResults.clean_baselines_evaluated}
-                    </div>
-                    <div className="text-[10px] text-slate-500">Zero false positives</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <div className="text-[10px] uppercase font-mono text-slate-500">Suite Latency</div>
-                    <div className="text-2xl font-bold font-mono text-amber-400 mt-1">
-                      {simulatorResults.execution_time_ms} ms
-                    </div>
-                    <div className="text-[10px] text-slate-500">Lightning sub-millisecond per vector</div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Test Vector Results List */}
-            {simulatorResults && (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center justify-between">
-                  <span>Detailed Vector Interception Log ({simulatorResults.results.length} Tests)</span>
-                  <span className="text-[11px] text-emerald-400 font-mono">ALL VECTORS VERIFIED SECURE</span>
-                </h3>
-
-                <div className="space-y-3">
-                  {simulatorResults.results.map((r) => (
-                    <div
-                      key={r.vector_id}
-                      className="p-3.5 rounded-lg bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition space-y-2 text-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
-                            #{r.vector_id}
-                          </span>
-                          <span className="font-bold text-white">{r.name}</span>
-                          <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                            {r.category}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] text-slate-400">
-                            Score: <strong className="text-amber-400">{r.risk_score.toFixed(1)}/100</strong>
-                          </span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase border ${
-                            r.passed ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'
-                          }`}>
-                            {r.passed ? '✓ PASSED' : '✗ FAILED'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="font-mono text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded border border-slate-900">
-                        Prompt: "{r.prompt}"
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-900">
-                        <div>
-                          Expected: <strong className="text-slate-300">{r.expected_outcome}</strong> &bull; Actual: <strong className="text-emerald-400">{r.actual_decision}</strong>
-                        </div>
-                        <div className="font-mono text-cyan-400 text-[10px] mt-1 sm:mt-0">
-                          Interception: {r.defense_mechanism}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : activeTab === 'dashboard' ? (
-          /* SOC Visual Analytics Dashboard (Module 8) */
-          <div className="col-span-12 space-y-6">
-            {/* Top Metrics Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span className="font-semibold uppercase tracking-wider font-mono">Total Queries Evaluated</span>
-                  <Activity className="w-4 h-4 text-cyan-400" />
-                </div>
-                <div className="text-2xl font-bold font-mono text-white">
-                  {stats ? stats.total_events : '--'}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Real-time telemetry stream</div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span className="font-semibold uppercase tracking-wider font-mono">Blocked Attack Rate</span>
-                  <AlertOctagon className="w-4 h-4 text-red-400" />
-                </div>
-                <div className="text-2xl font-bold font-mono text-red-400 flex items-baseline gap-2">
-                  <span>{stats ? `${stats.block_rate_pct}%` : '--'}</span>
-                  <span className="text-xs text-slate-400 font-normal">({stats?.blocked_events || 0} blocked)</span>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Perimeter interception rate</div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span className="font-semibold uppercase tracking-wider font-mono">Avg Risk Score (0-100)</span>
-                  <TrendingUp className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="text-2xl font-bold font-mono text-amber-400">
-                  {stats ? stats.avg_risk_score.toFixed(1) : '--'}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Synergy weighted formula</div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span className="font-semibold uppercase tracking-wider font-mono">Pending HITL Approvals</span>
-                  <Clock className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="text-2xl font-bold font-mono text-purple-400">
-                  {stats ? stats.pending_approvals : '--'}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Awaiting reviewer action</div>
-              </div>
-            </div>
-
-            {/* Visual Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Risk Level Distribution (Pie Chart) */}
-              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    Risk Level Distribution
-                  </h3>
-                  <span className="text-[10px] text-slate-500 font-mono">0–100 Scale</span>
-                </div>
-
-                <div className="h-64 w-full">
-                  {stats && stats.risk_distribution ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={stats.risk_distribution}
-                          dataKey="count"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={3}
-                        >
-                          {stats.risk_distribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
-                        />
-                        <Legend
-                          verticalAlign="bottom"
-                          iconSize={8}
-                          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Threat Categories Breakdown (Bar Chart) */}
-              <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                    Threat Categories Intercepted
-                  </h3>
-                  <button
-                    onClick={fetchStats}
-                    className="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Refresh
-                  </button>
-                </div>
-
-                <div className="h-64 w-full">
-                  {stats && stats.threat_breakdown ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={stats.threat_breakdown} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                        <XAxis
-                          dataKey="category"
-                          stroke="#64748b"
-                          fontSize={10}
-                          angle={-15}
-                          textAnchor="end"
-                          interval={0}
-                        />
-                        <YAxis stroke="#64748b" fontSize={10} allowDecimals={false} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
-                        />
-                        <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]}>
-                          {stats.threat_breakdown.map((entry, index) => (
-                            <Cell key={`bar-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions & CSV Export Banner */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                  <Download className="w-4 h-4 text-cyan-400" />
-                  Compliance & Security Audit Ledger Export
-                </h4>
-                <p className="text-[11px] text-slate-400">
-                  Download full chronological SOC telemetry with event hashes, risk scores, and decisions for audit compliance.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveTab('simulator')}
-                  className="px-3.5 py-1.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Target className="w-3.5 h-3.5" />
-                  Launch 16-Vector Simulator
-                </button>
-                {['reviewer', 'admin'].includes(currentUser.role) && (
-                  <button
-                    onClick={downloadAuditCSV}
-                    className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Export CSV Ledger
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : activeTab === 'policies' ? (
-          /* Policies Configuration Tab (Module 4) */
-          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400">
-                  <Sliders className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">Tool Access Control Policies (Module 4)</h2>
-                  <p className="text-xs text-slate-400">
-                    Backend Role-Based Access Control allowlist enforcing least-privilege tool execution.
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs font-mono bg-slate-800 text-slate-300 px-3 py-1 rounded-md border border-slate-700">
-                Logged in as: <strong className="text-cyan-400 uppercase">{currentUser.role}</strong>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {policies.map((p) => (
-                <div key={p.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-white flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-cyan-400" /> {p.name}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase border ${
-                        p.is_enabled
-                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                          : 'bg-red-500/15 text-red-400 border-red-500/30'
-                      }`}
-                    >
-                      {p.is_enabled ? 'Active / Enabled' : 'Disabled (Denylist)'}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-400">{p.description}</p>
-
-                  <div className="pt-2 border-t border-slate-900 grid grid-cols-3 gap-2 text-xs font-mono">
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Target Tool:</span>
-                      <span className="text-slate-300 font-semibold">{p.tool_name}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Required Min Role:</span>
-                      <span className="text-amber-400 font-semibold uppercase">{p.allowed_role}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">HITL Review:</span>
-                      <span className={`font-semibold ${p.requires_approval ? 'text-amber-400' : 'text-slate-400'}`}>
-                        {p.requires_approval ? 'Mandatory' : 'None'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : activeTab === 'approvals' ? (
-          /* Human-in-the-Loop Approval Queue Tab (Module 7) */
-          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">Human Review Approval Queue (Module 7)</h2>
-                  <p className="text-xs text-slate-400">
-                    Sensitive operations paused before execution, awaiting authorization by Security Reviewers.
-                  </p>
-                </div>
-              </div>
-
-              {/* Filter Buttons */}
-              <div className="flex items-center gap-2">
-                <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
-                  {['all', 'pending', 'approved', 'rejected'].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setApprovalFilter(f)}
-                      className={`px-3 py-1 rounded capitalize font-medium transition cursor-pointer ${
-                        approvalFilter === f ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={fetchApprovals}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                  title="Refresh Queue"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {loadingApprovals ? (
-              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading approval queue...</div>
-            ) : approvals.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 font-medium">No approval tickets matching criteria.</p>
-                <p className="text-xs text-slate-600 mt-1">Trigger sensitive operations in the chat to test this workflow.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {approvals.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="p-5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-4 shadow-md"
-                  >
-                    <div className="flex items-center justify-between border-b border-slate-900 pb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                          Ticket #{ticket.id}
-                        </span>
-                        <span className="font-bold text-sm text-white flex items-center gap-2">
-                          <Cpu className="w-4 h-4 text-cyan-400" />
-                          Action: <span className="text-cyan-300 font-mono">{ticket.action_name}</span>
-                        </span>
-                      </div>
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded uppercase font-mono border ${
-                          ticket.status === 'pending'
-                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse'
-                            : ticket.status === 'approved'
-                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                            : 'bg-red-500/15 text-red-400 border-red-500/30'
-                        }`}
-                      >
-                        {ticket.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                      <div>
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Payload Parameters:</span>
-                        <pre className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
-                          {ticket.action_payload || '{}'}
-                        </pre>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Audit Context:</span>
-                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] space-y-1">
-                          <div className="text-slate-400">Event Audit ID: <span className="font-mono text-slate-200">#{ticket.event_id}</span></div>
-                          <div className="text-slate-400">Created At: <span className="font-mono text-slate-200">{new Date(ticket.created_at).toLocaleString()}</span></div>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Review Note / Decision:</span>
-                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-                          {ticket.review_note || 'Pending review by authorized personnel.'}
-                          {ticket.decided_at && (
-                            <div className="text-[10px] text-slate-500 mt-1 font-mono">
-                              Decided: {new Date(ticket.decided_at).toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Execution Result Box if already decided */}
-                    {ticket.execution_result && (
-                      <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
-                        <span className="text-[10px] text-slate-500 block uppercase font-mono mb-1">Execution Post-Approval Result:</span>
-                        <div className="font-mono text-emerald-400 text-[11px]">{ticket.execution_result}</div>
-                      </div>
-                    )}
-
-                    {/* Action Controls for Pending Items */}
-                    {ticket.status === 'pending' && ['reviewer', 'admin'].includes(currentUser.role) && (
-                      <div className="pt-3 border-t border-slate-900 flex flex-col md:flex-row items-center gap-3">
-                        <input
-                          type="text"
-                          placeholder="Optional review justification note (e.g. Approved per Change Request #CHG-401)"
-                          value={decisionNotes[ticket.id] || ''}
-                          onChange={(e) => setDecisionNotes({ ...decisionNotes, [ticket.id]: e.target.value })}
-                          className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                        />
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleApprovalDecision(ticket.id, 'approved')}
-                            disabled={processingApprovalId === ticket.id}
-                            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            Authorize & Execute
-                          </button>
-                          <button
-                            onClick={() => handleApprovalDecision(ticket.id, 'rejected')}
-                            disabled={processingApprovalId === ticket.id}
-                            className="px-4 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            Reject Action
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : activeTab === 'events' ? (
-          /* SOC Audit Trail Tab (Module 5) */
-          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
-                  <Activity className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">Security Event Log & Audit Trail (Module 5)</h2>
-                  <p className="text-xs text-slate-400">
-                    Immutable security log recording prompt injections, tool violations, and approval events.
-                  </p>
-                </div>
-              </div>
-
-              {/* Event Filters & CSV Export */}
-              <div className="flex items-center gap-3">
-                <select
-                  value={eventRiskFilter}
-                  onChange={(e) => setEventRiskFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
-                >
-                  <option value="">All Risk Levels</option>
-                  <option value="Critical">Critical</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                  <option value="Safe">Safe</option>
-                </select>
-
-                <select
-                  value={eventDecisionFilter}
-                  onChange={(e) => setEventDecisionFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
-                >
-                  <option value="">All Decisions</option>
-                  <option value="Blocked">Blocked</option>
-                  <option value="Allowed">Allowed</option>
-                  <option value="Pending Approval">Pending Approval</option>
-                </select>
-
-                <button
-                  onClick={fetchEvents}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                  title="Refresh Audit Logs"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-
-                {['reviewer', 'admin'].includes(currentUser.role) && (
-                  <button
-                    onClick={downloadAuditCSV}
-                    className="px-3 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
-                    title="Download CSV"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    CSV Export
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {loadingEvents ? (
-              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading audit logs...</div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 font-medium">No audit events logged yet.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border border-slate-800/80 rounded-xl overflow-hidden">
-                  <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-3">ID / Time</th>
-                      <th className="py-3 px-3">Requester</th>
-                      <th className="py-3 px-3">Event Type</th>
-                      <th className="py-3 px-3">Risk Score</th>
-                      <th className="py-3 px-3">Decision</th>
-                      <th className="py-3 px-4">Audit Justification & Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
-                    {events.map((evt) => (
-                      <tr key={evt.id} className="hover:bg-slate-850/50 transition">
-                        <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap">
-                          <div className="text-slate-200">#{evt.id}</div>
-                          <div className="text-slate-500 text-[10px]">{new Date(evt.created_at).toLocaleTimeString()}</div>
-                        </td>
-                        <td className="py-3 px-3 font-mono text-slate-300 whitespace-nowrap">
-                          {evt.user_email || `User #${evt.user_id}`}
-                        </td>
-                        <td className="py-3 px-3 font-mono text-cyan-400 whitespace-nowrap">
-                          {evt.event_type}
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] border ${
-                            evt.risk_score >= 75 ? 'bg-red-500/15 text-red-400 border-red-500/30' :
-                            evt.risk_score >= 40 ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                          }`}>
-                            {evt.risk_score.toFixed(1)} ({evt.risk_level})
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded uppercase font-mono text-[10px] font-bold border ${
-                            evt.decision === 'Blocked' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
-                            evt.decision === 'Pending Approval' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                          }`}>
-                            {evt.decision}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-300 max-w-md">
-                          <div className="truncate font-medium">{evt.reason}</div>
-                          {evt.input_snippet && (
-                            <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">
-                              Prompt: "{evt.input_snippet}"
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Logged In: Agent Chat Console */
+        ) : activeTab === 'chat' ? (
+          /* PRIMARY VIEW: Agent Chat Console */
           <>
             {/* Left Sidebar: Session, Tools & Live Attack Simulator Chips */}
             <div className="md:col-span-4 space-y-5">
@@ -1329,19 +694,19 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Controlled Attack Simulator Chips (Teacher Demo) */}
+              {/* Quick Attack Verification Chips */}
               <div className="bg-slate-900/70 border border-red-500/20 rounded-xl p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4" />
-                    Quick Verification Tests
+                    Quick Security Tests
                   </h3>
                   <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30">
-                    Test Perimeter
+                    Live Guardrails
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mb-2.5">
-                  Click to fire controlled test vectors directly into live agent:
+                  Click to fire test vectors directly into live agent:
                 </p>
 
                 <div className="space-y-1.5 text-xs">
@@ -1632,6 +997,640 @@ export default function App() {
               </div>
             </div>
           </>
+        ) : activeTab === 'dashboard' ? (
+          /* SOC Visual Analytics Dashboard (Module 8) */
+          <div className="col-span-12 space-y-6">
+            {/* Top Metrics Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Total Queries Evaluated</span>
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-white">
+                  {stats ? stats.total_events : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Real-time telemetry stream</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Blocked Attack Rate</span>
+                  <AlertOctagon className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-red-400 flex items-baseline gap-2">
+                  <span>{stats ? `${stats.block_rate_pct}%` : '--'}</span>
+                  <span className="text-xs text-slate-400 font-normal">({stats?.blocked_events || 0} blocked)</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Perimeter interception rate</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Avg Risk Score (0-100)</span>
+                  <TrendingUp className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-amber-400">
+                  {stats ? stats.avg_risk_score.toFixed(1) : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Synergy weighted formula</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono">Pending HITL Approvals</span>
+                  <Clock className="w-4 h-4 text-purple-400" />
+                </div>
+                <div className="text-2xl font-bold font-mono text-purple-400">
+                  {stats ? stats.pending_approvals : '--'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Awaiting reviewer action</div>
+              </div>
+            </div>
+
+            {/* Visual Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Risk Level Distribution (Pie Chart) */}
+              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Risk Level Distribution
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-mono">0–100 Scale</span>
+                </div>
+
+                <div className="h-64 w-full">
+                  {stats && stats.risk_distribution ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.risk_distribution}
+                          dataKey="count"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={3}
+                        >
+                          {stats.risk_distribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Threat Categories Breakdown (Bar Chart) */}
+              <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    Threat Categories Intercepted
+                  </h3>
+                  <button
+                    onClick={fetchStats}
+                    className="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Refresh
+                  </button>
+                </div>
+
+                <div className="h-64 w-full">
+                  {stats && stats.threat_breakdown ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats.threat_breakdown} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                        <XAxis
+                          dataKey="category"
+                          stroke="#64748b"
+                          fontSize={10}
+                          angle={-15}
+                          textAnchor="end"
+                          interval={0}
+                        />
+                        <YAxis stroke="#64748b" fontSize={10} allowDecimals={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
+                        />
+                        <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]}>
+                          {stats.threat_breakdown.map((entry, index) => (
+                            <Cell key={`bar-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-500 text-xs">Loading telemetry...</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions & CSV Export Banner */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-cyan-400" />
+                  Compliance & Security Audit Ledger Export
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Download full chronological SOC telemetry with event hashes, risk scores, and decisions for audit compliance.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="px-3.5 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  Open Agent Chat Console
+                </button>
+                {['reviewer', 'admin'].includes(currentUser.role) && (
+                  <button
+                    onClick={downloadAuditCSV}
+                    className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV Ledger
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'simulator' ? (
+          /* 16-Vector Attack Simulator Benchmark Tab (Module 10) */
+          <div className="col-span-12 space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-5 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-red-500/10 text-red-400">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center gap-2">
+                      Automated 16-Vector Security Test Suite (Module 10)
+                      <span className="text-[10px] bg-red-500/10 border border-red-500/30 text-red-400 px-2 py-0.5 rounded font-mono">
+                        Teacher Demonstration Benchmark
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Standardized adversarial test benchmark executing 16 attack & baseline vectors through the security perimeter.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleRunSimulator}
+                  disabled={runningSimulator}
+                  className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold text-xs flex items-center gap-2 transition disabled:opacity-50 shadow-lg cursor-pointer"
+                >
+                  <Play className={`w-3.5 h-3.5 ${runningSimulator ? 'animate-spin' : ''}`} />
+                  {runningSimulator ? 'Running 16-Vector Benchmark...' : 'Run Automated Benchmark Suite'}
+                </button>
+              </div>
+
+              {/* Benchmark Summary Metrics */}
+              {simulatorResults && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] uppercase font-mono text-slate-500">Defense Accuracy</div>
+                    <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+                      {simulatorResults.overall_accuracy_pct}%
+                    </div>
+                    <div className="text-[10px] text-slate-500">16 / 16 vectors passed</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] uppercase font-mono text-slate-500">Attacks Intercepted</div>
+                    <div className="text-2xl font-bold font-mono text-cyan-400 mt-1">
+                      {simulatorResults.attacks_intercepted} / {simulatorResults.attacks_evaluated}
+                    </div>
+                    <div className="text-[10px] text-slate-500">100% Interception rate</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] uppercase font-mono text-slate-500">Clean Baselines Passed</div>
+                    <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+                      {simulatorResults.clean_baselines_passed} / {simulatorResults.clean_baselines_evaluated}
+                    </div>
+                    <div className="text-[10px] text-slate-500">Zero false positives</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] uppercase font-mono text-slate-500">Suite Latency</div>
+                    <div className="text-2xl font-bold font-mono text-amber-400 mt-1">
+                      {simulatorResults.execution_time_ms} ms
+                    </div>
+                    <div className="text-[10px] text-slate-500">Lightning sub-millisecond per vector</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Test Vector Results List */}
+            {simulatorResults && (
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center justify-between">
+                  <span>Detailed Vector Interception Log ({simulatorResults.results.length} Tests)</span>
+                  <span className="text-[11px] text-emerald-400 font-mono">ALL VECTORS VERIFIED SECURE</span>
+                </h3>
+
+                <div className="space-y-3">
+                  {simulatorResults.results.map((r) => (
+                    <div
+                      key={r.vector_id}
+                      className="p-3.5 rounded-lg bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition space-y-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                            #{r.vector_id}
+                          </span>
+                          <span className="font-bold text-white">{r.name}</span>
+                          <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                            {r.category}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] text-slate-400">
+                            Score: <strong className="text-amber-400">{r.risk_score.toFixed(1)}/100</strong>
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase border ${
+                            r.passed ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'
+                          }`}>
+                            {r.passed ? '✓ PASSED' : '✗ FAILED'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="font-mono text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded border border-slate-900">
+                        Prompt: "{r.prompt}"
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-900">
+                        <div>
+                          Expected: <strong className="text-slate-300">{r.expected_outcome}</strong> &bull; Actual: <strong className="text-emerald-400">{r.actual_decision}</strong>
+                        </div>
+                        <div className="font-mono text-cyan-400 text-[10px] mt-1 sm:mt-0">
+                          Interception: {r.defense_mechanism}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'policies' ? (
+          /* Policies Configuration Tab (Module 4) */
+          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+                  <Sliders className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Tool Access Control Policies (Module 4)</h2>
+                  <p className="text-xs text-slate-400">
+                    Backend Role-Based Access Control allowlist enforcing least-privilege tool execution.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-mono bg-slate-800 text-slate-300 px-3 py-1 rounded-md border border-slate-700">
+                Logged in as: <strong className="text-cyan-400 uppercase">{currentUser.role}</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {policies.map((p) => (
+                <div key={p.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-white flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-cyan-400" /> {p.name}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase border ${
+                        p.is_enabled
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-red-500/15 text-red-400 border-red-500/30'
+                      }`}
+                    >
+                      {p.is_enabled ? 'Active / Enabled' : 'Disabled (Denylist)'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-400">{p.description}</p>
+
+                  <div className="pt-2 border-t border-slate-900 grid grid-cols-3 gap-2 text-xs font-mono">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Target Tool:</span>
+                      <span className="text-slate-300 font-semibold">{p.tool_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Required Min Role:</span>
+                      <span className="text-amber-400 font-semibold uppercase">{p.allowed_role}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">HITL Review:</span>
+                      <span className={`font-semibold ${p.requires_approval ? 'text-amber-400' : 'text-slate-400'}`}>
+                        {p.requires_approval ? 'Mandatory' : 'None'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : activeTab === 'approvals' ? (
+          /* Human-in-the-Loop Approval Queue Tab (Module 7) */
+          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Human Review Approval Queue (Module 7)</h2>
+                  <p className="text-xs text-slate-400">
+                    Sensitive operations paused before execution, awaiting authorization by Security Reviewers.
+                  </p>
+                </div>
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
+                  {['all', 'pending', 'approved', 'rejected'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setApprovalFilter(f)}
+                      className={`px-3 py-1 rounded capitalize font-medium transition cursor-pointer ${
+                        approvalFilter === f ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={fetchApprovals}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                  title="Refresh Queue"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {loadingApprovals ? (
+              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading approval queue...</div>
+            ) : approvals.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
+                <p className="text-sm text-slate-400 font-medium">No approval tickets matching criteria.</p>
+                <p className="text-xs text-slate-600 mt-1">Trigger sensitive operations in the chat to test this workflow.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {approvals.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-4 shadow-md"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-900 pb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          Ticket #{ticket.id}
+                        </span>
+                        <span className="font-bold text-sm text-white flex items-center gap-2">
+                          <Cpu className="w-4 h-4 text-cyan-400" />
+                          Action: <span className="text-cyan-300 font-mono">{ticket.action_name}</span>
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs font-bold px-2.5 py-0.5 rounded uppercase font-mono border ${
+                          ticket.status === 'pending'
+                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse'
+                            : ticket.status === 'approved'
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : 'bg-red-500/15 text-red-400 border-red-500/30'
+                        }`}
+                      >
+                        {ticket.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Payload Parameters:</span>
+                        <pre className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
+                          {ticket.action_payload || '{}'}
+                        </pre>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Audit Context:</span>
+                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] space-y-1">
+                          <div className="text-slate-400">Event Audit ID: <span className="font-mono text-slate-200">#{ticket.event_id}</span></div>
+                          <div className="text-slate-400">Created At: <span className="font-mono text-slate-200">{new Date(ticket.created_at).toLocaleString()}</span></div>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Review Note / Decision:</span>
+                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                          {ticket.review_note || 'Pending review by authorized personnel.'}
+                          {ticket.decided_at && (
+                            <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                              Decided: {new Date(ticket.decided_at).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Execution Result Box if already decided */}
+                    {ticket.execution_result && (
+                      <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
+                        <span className="text-[10px] text-slate-500 block uppercase font-mono mb-1">Execution Post-Approval Result:</span>
+                        <div className="font-mono text-emerald-400 text-[11px]">{ticket.execution_result}</div>
+                      </div>
+                    )}
+
+                    {/* Action Controls for Pending Items */}
+                    {ticket.status === 'pending' && ['reviewer', 'admin'].includes(currentUser.role) && (
+                      <div className="pt-3 border-t border-slate-900 flex flex-col md:flex-row items-center gap-3">
+                        <input
+                          type="text"
+                          placeholder="Optional review justification note (e.g. Approved per Change Request #CHG-401)"
+                          value={decisionNotes[ticket.id] || ''}
+                          onChange={(e) => setDecisionNotes({ ...decisionNotes, [ticket.id]: e.target.value })}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleApprovalDecision(ticket.id, 'approved')}
+                            disabled={processingApprovalId === ticket.id}
+                            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Authorize & Execute
+                          </button>
+                          <button
+                            onClick={() => handleApprovalDecision(ticket.id, 'rejected')}
+                            disabled={processingApprovalId === ticket.id}
+                            className="px-4 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Reject Action
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* SOC Audit Trail Tab (Module 5) */
+          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Security Event Log & Audit Trail (Module 5)</h2>
+                  <p className="text-xs text-slate-400">
+                    Immutable security log recording prompt injections, tool violations, and approval events.
+                  </p>
+                </div>
+              </div>
+
+              {/* Event Filters & CSV Export */}
+              <div className="flex items-center gap-3">
+                <select
+                  value={eventRiskFilter}
+                  onChange={(e) => setEventRiskFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+                >
+                  <option value="">All Risk Levels</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Safe">Safe</option>
+                </select>
+
+                <select
+                  value={eventDecisionFilter}
+                  onChange={(e) => setEventDecisionFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+                >
+                  <option value="">All Decisions</option>
+                  <option value="Blocked">Blocked</option>
+                  <option value="Allowed">Allowed</option>
+                  <option value="Pending Approval">Pending Approval</option>
+                </select>
+
+                <button
+                  onClick={fetchEvents}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                  title="Refresh Audit Logs"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                {['reviewer', 'admin'].includes(currentUser.role) && (
+                  <button
+                    onClick={downloadAuditCSV}
+                    className="px-3 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                    title="Download CSV"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    CSV Export
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {loadingEvents ? (
+              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading audit logs...</div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
+                <p className="text-sm text-slate-400 font-medium">No audit events logged yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border border-slate-800/80 rounded-xl overflow-hidden">
+                  <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                    <tr>
+                      <th className="py-3 px-3">ID / Time</th>
+                      <th className="py-3 px-3">Requester</th>
+                      <th className="py-3 px-3">Event Type</th>
+                      <th className="py-3 px-3">Risk Score</th>
+                      <th className="py-3 px-3">Decision</th>
+                      <th className="py-3 px-4">Audit Justification & Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                    {events.map((evt) => (
+                      <tr key={evt.id} className="hover:bg-slate-850/50 transition">
+                        <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap">
+                          <div className="text-slate-200">#{evt.id}</div>
+                          <div className="text-slate-500 text-[10px]">{new Date(evt.created_at).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-300 whitespace-nowrap">
+                          {evt.user_email || `User #${evt.user_id}`}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-cyan-400 whitespace-nowrap">
+                          {evt.event_type}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] border ${
+                            evt.risk_score >= 75 ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                            evt.risk_score >= 40 ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          }`}>
+                            {evt.risk_score.toFixed(1)} ({evt.risk_level})
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded uppercase font-mono text-[10px] font-bold border ${
+                            evt.decision === 'Blocked' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                            evt.decision === 'Pending Approval' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          }`}>
+                            {evt.decision}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-300 max-w-md">
+                          <div className="truncate font-medium">{evt.reason}</div>
+                          {evt.input_snippet && (
+                            <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">
+                              Prompt: "{evt.input_snippet}"
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>
