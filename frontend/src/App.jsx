@@ -124,8 +124,14 @@ export default function App() {
       return '';
     }
   });
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regRole, setRegRole] = useState('user');
+  const [regSuccess, setRegSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('chat');
   const [policies, setPolicies] = useState([]);
   const [stats, setStats] = useState(null);
@@ -393,6 +399,39 @@ export default function App() {
         try { localStorage.setItem('token', data.access_token); } catch {}
       } else {
         setAuthError(data.detail || 'Authentication failed.');
+      }
+    } catch (e) {
+      setAuthError(`Connection error: ${e.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Handle Registration
+  const handleRegister = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setRegSuccess('');
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: regEmail,
+          full_name: regFullName.trim() || undefined,
+          password: regPassword,
+          role: regRole,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRegSuccess(`Account for ${data.email} created! Authenticating session…`);
+        setTimeout(async () => {
+          await loginAsPersona(regEmail, regPassword);
+        }, 600);
+      } else {
+        setAuthError(data.detail || 'Registration failed. Minimum 6 characters required.');
       }
     } catch (e) {
       setAuthError(`Connection error: ${e.message}`);
@@ -727,15 +766,38 @@ export default function App() {
             </div>
           </div>
 
-          {/* Manual Authentication Fallback & Live Telemetry Pill */}
-          <div className="bg-[#0D111A]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl max-w-2xl mx-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="text-xs font-mono uppercase font-bold tracking-wider text-slate-400 flex items-center gap-2">
-                <LockKeyhole className="w-4 h-4 text-cyan-400" /> Custom Credentials Authentication
-              </span>
-              <span className="text-xs font-mono text-slate-500">FastAPI JWT Token Pipeline</span>
+          {/* DUAL TABBED AUTHENTICATION PORTAL (SIGN IN & SIGN UP) */}
+          <div className="bg-[#0D111A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl max-w-2xl mx-auto space-y-5">
+            {/* Tab Selector */}
+            <div className="flex bg-[#07090E] p-1.5 rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setAuthError(''); setRegSuccess(''); }}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+                  authMode === 'login'
+                    ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.3)]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <LockKeyhole className="w-4 h-4" />
+                <span>1. Sign In (Existing User)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signup'); setAuthError(''); setRegSuccess(''); }}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+                  authMode === 'signup'
+                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>2. Sign Up (Create New Account)</span>
+              </button>
             </div>
 
+            {/* Error or Success Notifications */}
             {authError && (
               <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -743,44 +805,126 @@ export default function App() {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {regSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{regSuccess}</span>
+              </div>
+            )}
+
+            {/* TAB A: SIGN IN FORM */}
+            {authMode === 'login' ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-mono text-slate-300 block mb-1.5">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none transition"
+                      placeholder="analyst@agentsec.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-mono text-slate-300 block mb-1.5">Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none transition"
+                      placeholder="••••••••••••"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-sm shadow-[0_0_24px_rgba(34,211,238,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                  <span>{authLoading ? 'Verifying Credentials…' : 'Sign In to Agent Platform'}</span>
+                </button>
+
+                <div className="pt-2 text-center text-xs font-mono text-slate-400">
+                  Quick-Fill Demo Credentials:{' '}
+                  <button type="button" onClick={() => fillCredentials('analyst@agentsec.com', 'AnalystPass123!')} className="text-cyan-400 hover:underline mx-1 cursor-pointer">Analyst</button>•
+                  <button type="button" onClick={() => fillCredentials('admin@agentsec.com', 'AdminPass123!')} className="text-purple-400 hover:underline mx-1 cursor-pointer">Admin</button>•
+                  <button type="button" onClick={() => fillCredentials('user@agentsec.com', 'UserPass123!')} className="text-emerald-400 hover:underline mx-1 cursor-pointer">User</button>
+                </div>
+              </form>
+            ) : (
+              /* TAB B: SIGN UP (REGISTRATION) FORM */
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="text-xs font-mono text-slate-300 block mb-1.5">Full Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={regFullName}
+                      onChange={(e) => setRegFullName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition"
+                      placeholder="e.g. Officer Alex Vance"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-mono text-slate-300 block mb-1.5">Role Assignment</label>
+                    <select
+                      value={regRole}
+                      onChange={(e) => setRegRole(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition cursor-pointer"
+                    >
+                      <option value="user">USER (Standard Agent Client)</option>
+                      <option value="reviewer">REVIEWER (Security Analyst)</option>
+                      <option value="admin">ADMIN (Full Permissions)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-xs font-mono text-slate-400 block mb-1">Email</label>
+                  <label className="text-xs font-mono text-slate-300 block mb-1.5">Email Address</label>
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-cyan-500 focus:outline-none"
-                    placeholder="analyst@agentsec.com"
+                    required
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition"
+                    placeholder="new_analyst@agentsec.com"
                   />
                 </div>
+
                 <div>
-                  <label className="text-xs font-mono text-slate-400 block mb-1">Password</label>
+                  <label className="text-xs font-mono text-slate-300 block mb-1.5">Password (Min 6 Characters)</label>
                   <input
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-cyan-500 focus:outline-none"
+                    required
+                    minLength={6}
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-[#07090E] border border-white/10 text-white text-sm font-mono focus:border-purple-400 focus:outline-none transition"
                     placeholder="••••••••••••"
                   />
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-semibold text-sm transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                <span>{authLoading ? 'Verifying Credentials…' : 'Authenticate Session'}</span>
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-sm shadow-[0_0_24px_rgba(168,85,247,0.3)] transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
+                  <span>{authLoading ? 'Creating Account…' : 'Register Account & Authenticate'}</span>
+                </button>
+              </form>
+            )}
 
+            {/* System Engine Status Footer */}
             <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
               <div className="flex items-center gap-2">
                 <Server className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Core: FastAPI (127.0.0.1:8000)</span>
+                <span>Backend Engine: FastAPI • SQLite Persistence</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -992,6 +1136,22 @@ export default function App() {
                 <span>{runningSimulator ? 'Running Suite…' : 'Execute Benchmark'}</span>
               </button>
             )}
+
+            {/* Prominent User Session & Sign Out Button */}
+            <div className="hidden sm:flex items-center gap-2.5 pl-3 border-l border-white/10">
+              <div className="text-right">
+                <div className="text-xs font-bold text-white leading-tight">{currentUser.email}</div>
+                <div className="text-[10px] font-mono text-cyan-400 uppercase font-semibold">{currentUser.role}</div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                title="Sign out and return to login/signup portal"
+                className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.15)] active:scale-[0.97]"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </header>
 
