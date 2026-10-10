@@ -30,6 +30,14 @@ DEFAULT_POLICIES = [
         "description": "Restricts employee and security asset directory lookups to Reviewers and Administrators.",
     },
     {
+        "name": "Service Credential Rotation Policy",
+        "tool_name": "credential_rotation",
+        "allowed_role": UserRole.REVIEWER,
+        "is_enabled": True,
+        "requires_approval": True,
+        "description": "Requires human reviewer approval before rotating service credentials (Sensitive Action).",
+    },
+    {
         "name": "System Shell Execution Policy",
         "tool_name": "system_shell",
         "allowed_role": UserRole.ADMIN,

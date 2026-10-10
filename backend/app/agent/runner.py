@@ -112,10 +112,17 @@ class AgentRunner:
                 tool_name = "record_lookup"
                 args = {"identifier": identifier}
 
+        # Credential Rotation intent (Sensitive Action - Requires Approval)
+        if not tool_name:
+            rot_match = re.search(r'(?:rotate|reset)\s+(?:credentials?|keys?|passwords?)\s+(?:for\s+)?([A-Za-z0-9_-]+)', text, re.IGNORECASE)
+            if rot_match:
+                tool_name = "credential_rotation"
+                args = {"service_name": rot_match.group(1)}
+
         if not tool_name:
             return None
 
-        # Backend Policy Permission Check (Module 4)
+        # Backend Policy Permission Check (Modules 4 & 7)
         if user and db:
             policy_check: PolicyDecision = policy_engine.check_tool_permission(tool_name, user, db)
             if not policy_check.allowed:
@@ -126,8 +133,17 @@ class AgentRunner:
                     status="blocked_by_policy",
                     policy_reason=policy_check.reason,
                 )
+            elif policy_check.requires_approval:
+                # Sensitive action held for Human-in-the-Loop approval
+                return AgentActionLog(
+                    tool_name=tool_name,
+                    arguments=args,
+                    output=f"⏸️ ACTION HELD: Execution of '{tool_name}' is paused pending human reviewer approval.",
+                    status="pending_approval",
+                    policy_reason=f"Requires human reviewer approval under policy",
+                )
 
-        # Authorized: Execute Tool
+        # Authorized & No Approval Required: Execute Tool
         res: ToolExecutionResult = self.registry.execute_tool(tool_name, args)
         return AgentActionLog(
             tool_name=tool_name,

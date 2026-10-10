@@ -1,3 +1,4 @@
+import json
 from typing import Any, List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.security_event import SecurityEvent, RiskLevel, SecurityDecision
+from app.models.approval import Approval, ApprovalStatus
 from app.schemas.chat import ChatRequest, ChatResponse, ToolInvocationSchema
 from app.agent.runner import agent_runner
 from app.agent.tools import tool_registry, ToolDefinition
@@ -55,9 +57,12 @@ def execute_agent_chat(
     # 3. Clean / Permitted request: Dispatch to Agent Runner with Policy Enforcement & Output Scanner
     agent_output = agent_runner.process_task(request.message, user=current_user, db=db)
 
-    # Check if any tool action was blocked by policy (Module 4)
+    # Check tool execution statuses
     tool_blocked = False
+    tool_pending = False
     policy_violation_reason = ""
+    pending_tool_name = ""
+    pending_tool_args = {}
     tool_invocations = []
 
     for action in agent_output.actions_taken:
@@ -72,6 +77,61 @@ def execute_agent_chat(
         if action.status == "blocked_by_policy":
             tool_blocked = True
             policy_violation_reason = action.policy_reason or "Unauthorized tool execution attempt"
+        elif action.status == "pending_approval":
+            tool_pending = True
+            pending_tool_name = action.tool_name
+            pending_tool_args = action.arguments
+
+    # If action requires Human-in-the-Loop review (Module 7)
+    if tool_pending:
+        approval_event = SecurityEvent(
+            user_id=current_user.id,
+            event_type="human_approval_required",
+            risk_score=50.0,
+            risk_level=RiskLevel.MEDIUM,
+            decision=SecurityDecision.PENDING_APPROVAL,
+            reason=f"Sensitive operation '{pending_tool_name}' paused pending Reviewer approval.",
+            input_snippet=request.message[:200],
+            output_snippet=f"PAUSED_FOR_APPROVAL: {pending_tool_name}",
+        )
+        db.add(approval_event)
+        db.commit()
+        db.refresh(approval_event)
+
+        new_approval = Approval(
+            event_id=approval_event.id,
+            action_name=pending_tool_name,
+            action_payload=json.dumps(pending_tool_args),
+            status=ApprovalStatus.PENDING,
+        )
+        db.add(new_approval)
+        db.commit()
+        db.refresh(new_approval)
+
+        held_message = (
+            f"⏸️ ACTION HELD FOR HUMAN APPROVAL\n\n"
+            f"Your request to execute '{pending_tool_name}' involves a sensitive operation and has been placed in the pending approval queue.\n\n"
+            f"• Action: {pending_tool_name}\n"
+            f"• Parameters: {pending_tool_args}\n"
+            f"• Approval Ticket: #{new_approval.id}\n"
+            f"• Event Audit ID: #{approval_event.id}\n\n"
+            f"An authorized Security Reviewer must approve this operation before it will be executed."
+        )
+
+        return ChatResponse(
+            response=held_message,
+            tools_invoked=tool_invocations,
+            model_mode=agent_output.mode,
+            user_email=current_user.email,
+            risk_score=50.0,
+            risk_level=RiskLevel.MEDIUM.value,
+            decision="Pending Approval",
+            blocked=False,
+            output_redacted=False,
+            threat_reasons=[f"Sensitive operation '{pending_tool_name}' placed in approval queue ticket #{new_approval.id}."],
+            score_breakdown=["Action Sensitivity Modifier: +50.0 pts (Requires Human Approval)"],
+            event_id=approval_event.id,
+        )
 
     # If tool was blocked by policy, record a policy violation event in audit database
     if tool_blocked:

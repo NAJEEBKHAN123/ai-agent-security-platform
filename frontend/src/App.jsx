@@ -3,7 +3,8 @@ import {
   Shield, Lock, CheckCircle2, AlertCircle, Key, Server, UserCheck, 
   Terminal, Bot, Send, Calculator, FileText, Search, User, Sparkles, 
   RefreshCw, LogOut, Cpu, ArrowRight, AlertTriangle, ShieldAlert,
-  ChevronDown, ChevronUp, Database, Sliders, EyeOff, ShieldCheck
+  ChevronDown, ChevronUp, Database, Sliders, EyeOff, ShieldCheck,
+  Clock, Check, X, Filter, History, Activity
 } from 'lucide-react';
 
 const API_BASE = 'http://127.0.0.1:8000';
@@ -18,17 +19,30 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Tab State: 'chat' | 'policies'
+  // Tab State: 'chat' | 'policies' | 'approvals' | 'events'
   const [activeTab, setActiveTab] = useState('chat');
   const [policies, setPolicies] = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
+
+  // Human Approvals State (Module 7)
+  const [approvals, setApprovals] = useState([]);
+  const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
+  const [loadingApprovals, setLoadingApprovals] = useState(false);
+  const [decisionNotes, setDecisionNotes] = useState({});
+  const [processingApprovalId, setProcessingApprovalId] = useState(null);
+
+  // SOC Audit Events State (Module 5)
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [eventRiskFilter, setEventRiskFilter] = useState('');
+  const [eventDecisionFilter, setEventDecisionFilter] = useState('');
 
   // Chat & Security State
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'agent',
-      text: "Hello! I am your enterprise AI agent protected by the AI Agent Security Platform (Modules 1, 2, 3, 4 & 6 Active).\n\nEvery input is evaluated for prompt injection, tool actions are strictly verified against Role-Based Policies (Module 4), and all outputs are scanned to prevent synthetic secret leaks (Module 6).",
+      text: "Hello! I am your enterprise AI agent protected by the AI Agent Security Platform (Steps 1–5 Active).\n\n• Perimeter Guard: Real-time Prompt Injection Scanner & Weighted 0–100 Risk Engine.\n• Access Guard: Role-Based Tool Access Control Policies.\n• Data Guard: Automated Synthetic Secret Redaction.\n• Governance: Human-in-the-Loop Approval Queue & SOC Audit Logging.",
       tools: [],
       security: {
         risk_score: 0.0,
@@ -36,7 +50,7 @@ export default function App() {
         decision: "Allowed",
         blocked: false,
         output_redacted: false,
-        threat_reasons: ["Initial greeting verified clean."],
+        threat_reasons: ["System baseline initialized clean."],
         score_breakdown: []
       },
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -69,7 +83,7 @@ export default function App() {
     checkHealth();
   }, []);
 
-  // Fetch Current User & Policies
+  // Fetch Current User & Initial Data
   useEffect(() => {
     if (!token) {
       setCurrentUser(null);
@@ -97,6 +111,60 @@ export default function App() {
     };
     fetchUserData();
   }, [token]);
+
+  // Fetch Approvals
+  const fetchApprovals = async () => {
+    if (!token) return;
+    try {
+      setLoadingApprovals(true);
+      const url = approvalFilter === 'all' 
+        ? `${API_BASE}/api/v1/approvals` 
+        : `${API_BASE}/api/v1/approvals?status=${approvalFilter}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setApprovals(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch approvals:", e);
+    } finally {
+      setLoadingApprovals(false);
+    }
+  };
+
+  // Fetch Audit Events
+  const fetchEvents = async () => {
+    if (!token) return;
+    try {
+      setLoadingEvents(true);
+      let query = [];
+      if (eventRiskFilter) query.push(`risk_level=${eventRiskFilter}`);
+      if (eventDecisionFilter) query.push(`decision=${eventDecisionFilter}`);
+      const queryString = query.length > 0 ? `?${query.join('&')}` : '';
+
+      const res = await fetch(`${API_BASE}/api/v1/events${queryString}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch events:", e);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'approvals') {
+      fetchApprovals();
+    } else if (activeTab === 'events') {
+      fetchEvents();
+    }
+  }, [activeTab, approvalFilter, eventRiskFilter, eventDecisionFilter, token]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -186,6 +254,11 @@ export default function App() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setMessages(prev => [...prev, agentMsg]);
+
+        // Auto-refresh approvals count if pending approval created
+        if (data.decision === 'Pending Approval') {
+          fetchApprovals();
+        }
       } else {
         const errData = await res.json();
         setMessages(prev => [...prev, {
@@ -206,6 +279,32 @@ export default function App() {
       }]);
     } finally {
       setChatLoading(false);
+    }
+  };
+
+  // Submit Approval Decision (Module 7)
+  const handleApprovalDecision = async (approvalId, decision) => {
+    try {
+      setProcessingApprovalId(approvalId);
+      const note = decisionNotes[approvalId] || `Authorized review by ${currentUser.email}`;
+      const res = await fetch(`${API_BASE}/api/v1/approvals/${approvalId}/decision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ decision, review_note: note })
+      });
+      if (res.ok) {
+        await fetchApprovals();
+      } else {
+        const err = await res.json();
+        alert(`Approval error: ${err.detail || 'Failed to submit decision'}`);
+      }
+    } catch (e) {
+      alert(`Network error submitting decision: ${e.message}`);
+    } finally {
+      setProcessingApprovalId(null);
     }
   };
 
@@ -246,6 +345,8 @@ export default function App() {
     return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
   };
 
+  const pendingApprovalsCount = approvals.filter(a => a.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Top Navbar */}
@@ -258,11 +359,11 @@ export default function App() {
             <h1 className="font-bold text-base tracking-wide text-white flex items-center gap-2">
               AI Agent Security Platform
               <span className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-mono">
-                Step 4: Policies & Output Defense
+                Step 5: HITL Approvals & SOC Logs
               </span>
             </h1>
             <p className="text-xs text-slate-400">
-              Tool Access Control &bull; Synthetic Secret Redaction &bull; Prompt Guardrails
+              Prompt Injection Defense &bull; RBAC Policies &bull; Human-in-the-Loop &bull; SOC Audit Trail
             </p>
           </div>
         </div>
@@ -285,7 +386,30 @@ export default function App() {
                   activeTab === 'policies' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Tool Policies ({policies.length})
+                Policies ({policies.length})
+              </button>
+              {['reviewer', 'admin'].includes(currentUser.role) && (
+                <button
+                  onClick={() => setActiveTab('approvals')}
+                  className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
+                    activeTab === 'approvals' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Approvals</span>
+                  {pendingApprovalsCount > 0 && (
+                    <span className="bg-amber-500 text-slate-950 font-bold px-1.5 py-0.2 rounded-full text-[10px]">
+                      {pendingApprovalsCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`px-3 py-1 rounded-md transition font-medium ${
+                  activeTab === 'events' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Audit Logs
               </button>
             </div>
           )}
@@ -328,24 +452,28 @@ export default function App() {
               <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  Step 4 Architecture Ready
+                  Step 5 Architecture Ready
                 </h2>
                 <div className="space-y-2.5 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>Human-in-the-Loop Sensitive Action Approval Queue (Module 7)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>SOC Security Event Audit Trail with RBAC Scoping (Module 5)</span>
+                  </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>Backend Tool Access Control (RBAC Policies - Module 4)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Real-Time Output Security & Synthetic Secret Redaction (Module 6)</span>
+                    <span>Real-Time Output Security & Secret Redaction (Module 6)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Live Powered by Groq LLM with Guardrail Fallback</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Automated Test Suite Passing: 31/31 Unit & Policy Tests</span>
+                    <span>Automated Test Suite Passing: 36/36 Unit, HITL & SOC Tests</span>
                   </div>
                 </div>
               </div>
@@ -362,9 +490,19 @@ export default function App() {
                   >
                     <div>
                       <div className="font-semibold text-slate-200">analyst@agentsec.com</div>
-                      <div className="text-slate-500">Role: REVIEWER (Authorized for Directory Tool)</div>
+                      <div className="text-slate-500">Role: REVIEWER (Approval Authority & Audit Access)</div>
                     </div>
                     <span className="text-cyan-400 font-mono">Fill &rarr;</span>
+                  </button>
+                  <button
+                    onClick={() => fillCredentials('admin@agentsec.com', 'AdminPass123!')}
+                    className="w-full text-left p-3 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-200">admin@agentsec.com</div>
+                      <div className="text-slate-500">Role: ADMIN (Full Control & Policy Management)</div>
+                    </div>
+                    <span className="text-purple-400 font-mono">Fill &rarr;</span>
                   </button>
                   <button
                     onClick={() => fillCredentials('user@agentsec.com', 'UserPass123!')}
@@ -372,7 +510,7 @@ export default function App() {
                   >
                     <div>
                       <div className="font-semibold text-slate-200">user@agentsec.com</div>
-                      <div className="text-slate-500">Role: USER (Standard Client - Blocked from Directory)</div>
+                      <div className="text-slate-500">Role: USER (Standard Client - Blocked from Sensitive Tools)</div>
                     </div>
                     <span className="text-emerald-400 font-mono">Fill &rarr;</span>
                   </button>
@@ -469,7 +607,7 @@ export default function App() {
 
                   <p className="text-xs text-slate-400">{p.description}</p>
 
-                  <div className="pt-2 border-t border-slate-900 grid grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="pt-2 border-t border-slate-900 grid grid-cols-3 gap-2 text-xs font-mono">
                     <div>
                       <span className="text-slate-500 block text-[10px]">Target Tool:</span>
                       <span className="text-slate-300 font-semibold">{p.tool_name}</span>
@@ -478,13 +616,286 @@ export default function App() {
                       <span className="text-slate-500 block text-[10px]">Required Min Role:</span>
                       <span className="text-amber-400 font-semibold uppercase">{p.allowed_role}</span>
                     </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">HITL Review:</span>
+                      <span className={`font-semibold ${p.requires_approval ? 'text-amber-400' : 'text-slate-400'}`}>
+                        {p.requires_approval ? 'Mandatory' : 'None'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        ) : activeTab === 'approvals' ? (
+          /* Human-in-the-Loop Approval Queue Tab (Module 7) */
+          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Human Review Approval Queue (Module 7)</h2>
+                  <p className="text-xs text-slate-400">
+                    Sensitive operations paused before execution, awaiting authorization by Security Reviewers.
+                  </p>
+                </div>
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
+                  {['all', 'pending', 'approved', 'rejected'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setApprovalFilter(f)}
+                      className={`px-3 py-1 rounded capitalize font-medium transition ${
+                        approvalFilter === f ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={fetchApprovals}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  title="Refresh Queue"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {loadingApprovals ? (
+              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading approval queue...</div>
+            ) : approvals.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
+                <p className="text-sm text-slate-400 font-medium">No approval tickets matching criteria.</p>
+                <p className="text-xs text-slate-600 mt-1">Trigger sensitive operations in the chat to test this workflow.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {approvals.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-4 shadow-md"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-900 pb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          Ticket #{ticket.id}
+                        </span>
+                        <span className="font-bold text-sm text-white flex items-center gap-2">
+                          <Cpu className="w-4 h-4 text-cyan-400" />
+                          Action: <span className="text-cyan-300 font-mono">{ticket.action_name}</span>
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs font-bold px-2.5 py-0.5 rounded uppercase font-mono border ${
+                          ticket.status === 'pending'
+                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse'
+                            : ticket.status === 'approved'
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : 'bg-red-500/15 text-red-400 border-red-500/30'
+                        }`}
+                      >
+                        {ticket.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Payload Parameters:</span>
+                        <pre className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
+                          {ticket.action_payload || '{}'}
+                        </pre>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Audit Context:</span>
+                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] space-y-1">
+                          <div className="text-slate-400">Event Audit ID: <span className="font-mono text-slate-200">#{ticket.event_id}</span></div>
+                          <div className="text-slate-400">Created At: <span className="font-mono text-slate-200">{new Date(ticket.created_at).toLocaleString()}</span></div>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Review Note / Decision:</span>
+                        <div className="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                          {ticket.review_note || 'Pending review by authorized personnel.'}
+                          {ticket.decided_at && (
+                            <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                              Decided: {new Date(ticket.decided_at).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Execution Result Box if already decided */}
+                    {ticket.execution_result && (
+                      <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
+                        <span className="text-[10px] text-slate-500 block uppercase font-mono mb-1">Execution Post-Approval Result:</span>
+                        <div className="font-mono text-emerald-400 text-[11px]">{ticket.execution_result}</div>
+                      </div>
+                    )}
+
+                    {/* Action Controls for Pending Items */}
+                    {ticket.status === 'pending' && ['reviewer', 'admin'].includes(currentUser.role) && (
+                      <div className="pt-3 border-t border-slate-900 flex flex-col md:flex-row items-center gap-3">
+                        <input
+                          type="text"
+                          placeholder="Optional review justification note (e.g. Approved per Change Request #CHG-401)"
+                          value={decisionNotes[ticket.id] || ''}
+                          onChange={(e) => setDecisionNotes({ ...decisionNotes, [ticket.id]: e.target.value })}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleApprovalDecision(ticket.id, 'approved')}
+                            disabled={processingApprovalId === ticket.id}
+                            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Authorize & Execute
+                          </button>
+                          <button
+                            onClick={() => handleApprovalDecision(ticket.id, 'rejected')}
+                            disabled={processingApprovalId === ticket.id}
+                            className="px-4 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Reject Action
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'events' ? (
+          /* SOC Audit Trail Tab (Module 5) */
+          <div className="col-span-12 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Security Event Log & Audit Trail (Module 5)</h2>
+                  <p className="text-xs text-slate-400">
+                    Immutable security log recording prompt injections, tool violations, and approval events.
+                  </p>
+                </div>
+              </div>
+
+              {/* Event Filters */}
+              <div className="flex items-center gap-3">
+                <select
+                  value={eventRiskFilter}
+                  onChange={(e) => setEventRiskFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+                >
+                  <option value="">All Risk Levels</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Safe">Safe</option>
+                </select>
+
+                <select
+                  value={eventDecisionFilter}
+                  onChange={(e) => setEventDecisionFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+                >
+                  <option value="">All Decisions</option>
+                  <option value="Blocked">Blocked</option>
+                  <option value="Allowed">Allowed</option>
+                  <option value="Pending Approval">Pending Approval</option>
+                </select>
+
+                <button
+                  onClick={fetchEvents}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  title="Refresh Audit Logs"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {loadingEvents ? (
+              <div className="text-center py-12 text-slate-500 text-xs animate-pulse">Loading audit logs...</div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400/50 mx-auto mb-2" />
+                <p className="text-sm text-slate-400 font-medium">No audit events logged yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border border-slate-800/80 rounded-xl overflow-hidden">
+                  <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                    <tr>
+                      <th className="py-3 px-3">ID / Time</th>
+                      <th className="py-3 px-3">Requester</th>
+                      <th className="py-3 px-3">Event Type</th>
+                      <th className="py-3 px-3">Risk Score</th>
+                      <th className="py-3 px-3">Decision</th>
+                      <th className="py-3 px-4">Audit Justification & Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                    {events.map((evt) => (
+                      <tr key={evt.id} className="hover:bg-slate-850/50 transition">
+                        <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap">
+                          <div className="text-slate-200">#{evt.id}</div>
+                          <div className="text-slate-500 text-[10px]">{new Date(evt.created_at).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-300 whitespace-nowrap">
+                          {evt.user_email || `User #${evt.user_id}`}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-cyan-400 whitespace-nowrap">
+                          {evt.event_type}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] border ${
+                            evt.risk_score >= 75 ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                            evt.risk_score >= 40 ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          }`}>
+                            {evt.risk_score.toFixed(1)} ({evt.risk_level})
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded uppercase font-mono text-[10px] font-bold border ${
+                            evt.decision === 'Blocked' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                            evt.decision === 'Pending Approval' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                            'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          }`}>
+                            {evt.decision}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-300 max-w-md">
+                          <div className="truncate font-medium">{evt.reason}</div>
+                          {evt.input_snippet && (
+                            <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">
+                              Prompt: "{evt.input_snippet}"
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         ) : (
-          /* Logged In: Step 4 Agent Chat Console */
+          /* Logged In: Step 5 Agent Chat Console */
           <>
             {/* Left Sidebar: Session, Tools & Live Attack Simulator Chips */}
             <div className="md:col-span-4 space-y-5">
@@ -512,24 +923,33 @@ export default function App() {
                 <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4" />
-                    Attack Simulator Tests
+                    Security Verification Tests
                   </h3>
                   <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30">
                     Test Perimeter
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mb-2.5">
-                  Click to fire controlled attacks across prompt injection, policy bypass, & leakage:
+                  Click to fire controlled test vectors across all 5 modules:
                 </p>
 
                 <div className="space-y-1.5 text-xs">
+                  {/* Step 5: Sensitive Action Requiring Reviewer Approval */}
+                  <button
+                    onClick={() => handleSendMessage("Please rotate credentials for payment-gateway service")}
+                    className="w-full text-left p-2 rounded bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 text-amber-300 hover:text-white transition flex items-center justify-between text-[11px]"
+                  >
+                    <span>⏸️ Sensitive Action (Pause for Human Review)</span>
+                    <ArrowRight className="w-3 h-3 text-amber-400" />
+                  </button>
+
                   {/* Step 4: Policy Privilege Escalation Test */}
                   <button
                     onClick={() => handleSendMessage("Look up directory record SEC-101.")}
-                    className="w-full text-left p-2 rounded bg-amber-950/20 hover:bg-amber-900/30 border border-amber-500/30 text-amber-300 hover:text-white transition flex items-center justify-between text-[11px]"
+                    className="w-full text-left p-2 rounded bg-slate-950/40 hover:bg-slate-800 border border-slate-800 text-cyan-300 hover:text-white transition flex items-center justify-between text-[11px]"
                   >
-                    <span>🛡️ Tool Policy Enforcement (Requires Reviewer)</span>
-                    <ArrowRight className="w-3 h-3 text-amber-400" />
+                    <span>🛡️ Tool Policy Check (Requires Reviewer)</span>
+                    <ArrowRight className="w-3 h-3 text-cyan-400" />
                   </button>
 
                   {/* Step 4: Output Secret Leakage Test */}
@@ -600,199 +1020,180 @@ export default function App() {
                         Perimeter Guard Active
                       </span>
                     </h2>
-                    <p className="text-[11px] text-slate-400">Modules 1–4, 6: Tool RBAC + Secret Redactor + Groq LLM</p>
+                    <p className="text-[11px] text-slate-400">Groq LLM Engine &bull; Real-Time Security Perimeter</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={clearChat}
-                    className="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1"
-                    title="Clear Conversation"
+                    className="text-xs px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
                   >
-                    <RefreshCw className="w-3 h-3" /> Reset
+                    Clear History
                   </button>
                 </div>
               </div>
 
-              {/* Messages Scroll Area */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                {messages.map((msg) => (
+              {/* Chat Messages Log */}
+              <div className="flex-1 p-5 overflow-y-auto space-y-4 font-sans text-xs">
+                {messages.map((m) => (
                   <div
-                    key={msg.id}
-                    className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+                    key={m.id}
+                    className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
                   >
-                    {/* Avatar */}
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                        msg.sender === 'user'
-                          ? 'bg-cyan-600 text-white'
-                          : msg.security?.blocked
-                          ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-                          : msg.security?.output_redacted
-                          ? 'bg-purple-500/10 border border-purple-500/30 text-purple-400'
-                          : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                      }`}
-                    >
-                      {msg.sender === 'user' ? (
-                        <User className="w-4 h-4" />
-                      ) : msg.security?.blocked ? (
-                        <ShieldAlert className="w-4 h-4" />
-                      ) : msg.security?.output_redacted ? (
-                        <EyeOff className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-500">
+                      {m.sender === 'user' ? (
+                        <>
+                          <span>{currentUser.email}</span>
+                          <span>&bull;</span>
+                          <span>{m.timestamp}</span>
+                        </>
                       ) : (
-                        <Bot className="w-4 h-4" />
+                        <>
+                          <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                          <span className="font-semibold text-slate-300">Security Guard Agent</span>
+                          {m.mode && (
+                            <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded font-mono text-cyan-400">
+                              {m.mode}
+                            </span>
+                          )}
+                          <span>&bull;</span>
+                          <span>{m.timestamp}</span>
+                        </>
                       )}
                     </div>
 
-                    {/* Bubble Content */}
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
-                        msg.sender === 'user'
+                      className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                        m.sender === 'user'
                           ? 'bg-cyan-600 text-white rounded-tr-none'
-                          : msg.security?.blocked
-                          ? 'bg-red-950/20 border border-red-500/30 text-red-200 rounded-tl-none shadow-sm'
-                          : msg.security?.output_redacted
-                          ? 'bg-purple-950/20 border border-purple-500/30 text-purple-200 rounded-tl-none shadow-sm'
-                          : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm'
+                          : m.isError
+                          ? 'bg-red-950/40 border border-red-500/40 text-red-200 rounded-tl-none'
+                          : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none'
                       }`}
                     >
-                      {/* Security Assessment Badge Banner */}
-                      {msg.sender === 'agent' && msg.security && (
-                        <div className="mb-2.5 pb-2 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {/* Decision Badge */}
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
-                                msg.security.blocked
-                                  ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                                  : msg.security.output_redacted
-                                  ? 'bg-purple-500/20 text-purple-400 border-purple-500/40'
-                                  : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                              }`}
-                            >
-                              {msg.security.decision}
-                            </span>
+                      <div className="whitespace-pre-wrap leading-relaxed text-xs">{m.text}</div>
 
-                            {/* Risk Score Pill */}
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getRiskColor(
-                                msg.security.risk_level,
-                                msg.security.blocked,
-                                msg.security.output_redacted
-                              )}`}
-                            >
-                              Risk: {msg.security.risk_score}/100 ({msg.security.risk_level})
-                            </span>
-
-                            {/* Output Redacted Indicator */}
-                            {msg.security.output_redacted && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                                <EyeOff className="w-2.5 h-2.5" /> Secret Redacted
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Event ID and Details Toggle */}
-                          <div className="flex items-center gap-2">
-                            {msg.security.event_id && (
-                              <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                                <Database className="w-2.5 h-2.5" /> #{msg.security.event_id}
-                              </span>
-                            )}
-                            {msg.security.threat_reasons.length > 0 && (
-                              <button
-                                onClick={() => toggleThreatDetails(msg.id)}
-                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-0.5"
-                              >
-                                {expandedThreats[msg.id] ? 'Hide Details' : 'Security Log'}
-                                {expandedThreats[msg.id] ? (
-                                  <ChevronUp className="w-3 h-3" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3" />
-                                )}
-                              </button>
-                            )}
-                          </div>
+                      {/* Tool Invocations Details */}
+                      {m.tools && m.tools.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-1.5">
+                          <span className="text-[10px] uppercase font-mono text-slate-400 block">
+                            Tools Invoked ({m.tools.length}):
+                          </span>
+                          {m.tools.map((t, idx) => (
+                            <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800 text-[11px]">
+                              <div className="flex items-center justify-between font-mono">
+                                <span className="font-semibold text-cyan-400">{t.tool_name}</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                                  t.status === 'success' ? 'bg-emerald-500/20 text-emerald-300' :
+                                  t.status === 'blocked_by_policy' ? 'bg-red-500/20 text-red-300' :
+                                  t.status === 'pending_approval' ? 'bg-amber-500/20 text-amber-300' :
+                                  'bg-slate-800 text-slate-400'
+                                }`}>
+                                  {t.status}
+                                </span>
+                              </div>
+                              {t.output && (
+                                <div className="mt-1 text-slate-300 font-mono text-[10px] break-words">
+                                  Output: {t.output}
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
 
-                      {/* Expandable Threat / Policy Analysis Details */}
-                      {expandedThreats[msg.id] && msg.security && (
-                        <div className="mb-3 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] space-y-1.5 font-mono">
-                          <div className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" /> Security Evaluation Log
+                      {/* Security Assessment Badge (Module 3 & 6) */}
+                      {m.security && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${getRiskColor(
+                                  m.security.risk_level,
+                                  m.security.blocked,
+                                  m.security.output_redacted
+                                )}`}
+                              >
+                                Risk: {m.security.risk_score.toFixed(1)}/100 ({m.security.risk_level})
+                              </span>
+                              <span
+                                className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase border ${
+                                  m.security.decision === 'Blocked'
+                                    ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                                    : m.security.decision === 'Pending Approval'
+                                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                }`}
+                              >
+                                {m.security.decision}
+                              </span>
+                              {m.security.output_redacted && (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                                  <EyeOff className="w-3 h-3" /> Secret Redacted
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => toggleThreatDetails(m.id)}
+                              className="text-[11px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition"
+                            >
+                              <span>{expandedThreats[m.id] ? 'Hide Analysis' : 'Security Breakdown'}</span>
+                              {expandedThreats[m.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
                           </div>
-                          <ul className="list-disc list-inside text-slate-300 space-y-1">
-                            {msg.security.threat_reasons.map((r, idx) => (
-                              <li key={idx}>{r}</li>
-                            ))}
-                          </ul>
-                          {msg.security.score_breakdown && msg.security.score_breakdown.length > 0 && (
-                            <div className="pt-1.5 border-t border-slate-800 text-[10px] text-slate-400 space-y-0.5">
-                              <span className="text-slate-300 font-bold block">Weights:</span>
-                              {msg.security.score_breakdown.map((b, idx) => (
-                                <div key={idx}>{b}</div>
-                              ))}
+
+                          {/* Expanded Security Risk Breakdown */}
+                          {expandedThreats[m.id] && (
+                            <div className="mt-2.5 p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2 text-[11px]">
+                              {m.security.event_id && (
+                                <div className="text-[10px] text-slate-400 font-mono">
+                                  SOC Audit Event Record: <strong className="text-cyan-400">#{m.security.event_id}</strong>
+                                </div>
+                              )}
+                              <div>
+                                <span className="font-semibold text-slate-300 block mb-1">Threat Detection Signals:</span>
+                                {m.security.threat_reasons.length > 0 ? (
+                                  <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+                                    {m.security.threat_reasons.map((r, i) => (
+                                      <li key={i}>{r}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <span className="text-slate-500">None detected.</span>
+                                )}
+                              </div>
+
+                              {m.security.score_breakdown && m.security.score_breakdown.length > 0 && (
+                                <div className="pt-2 border-t border-slate-800">
+                                  <span className="font-semibold text-slate-300 block mb-1">0–100 Risk Score Formula:</span>
+                                  <div className="space-y-0.5 font-mono text-[10px] text-amber-400/90">
+                                    {m.security.score_breakdown.map((b, i) => (
+                                      <div key={i}>{b}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       )}
-
-                      {/* Tool Invocations Box */}
-                      {msg.tools && msg.tools.length > 0 && (
-                        <div className="mb-2.5 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] space-y-1.5 font-mono">
-                          <div className="text-[10px] uppercase font-bold text-cyan-400 flex items-center justify-between">
-                            <span className="flex items-center gap-1">
-                              <Cpu className="w-3 h-3" /> Tool: {msg.tools[0].tool_name}
-                            </span>
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold ${
-                                msg.tools[0].status === 'blocked_by_policy'
-                                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              }`}
-                            >
-                              {msg.tools[0].status}
-                            </span>
-                          </div>
-                          <div className="text-slate-400">
-                            Args: <span className="text-slate-300">{JSON.stringify(msg.tools[0].arguments)}</span>
-                          </div>
-                          <div className="text-slate-400">
-                            Result: <span className="text-slate-200 font-semibold">{String(msg.tools[0].output)}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Main Message Text */}
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
-                      
-                      {/* Timestamp */}
-                      <span className="block text-[10px] text-right mt-1.5 opacity-50 font-mono">
-                        {msg.timestamp}
-                      </span>
                     </div>
                   </div>
                 ))}
 
-                {/* Loading indicator */}
                 {chatLoading && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-slate-950 border border-slate-800 rounded-2xl rounded-tl-none px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Evaluating RBAC policy, running Groq agent, and scanning output for sensitive data...
-                    </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 p-3 rounded-xl bg-slate-950 border border-slate-800 w-fit">
+                    <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+                    <span>Evaluating prompt against security perimeter...</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
               </div>
 
-              {/* Chat Input Bar */}
-              <div className="border-t border-slate-800 p-3 bg-slate-900/90">
+              {/* Chat Input Box */}
+              <div className="p-4 border-t border-slate-800 bg-slate-950/80">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -804,17 +1205,17 @@ export default function App() {
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Enter prompt or attack payload to test security perimeter..."
-                    className="flex-1 bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:outline-none rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500"
+                    placeholder="Enter prompt or task (e.g. Rotate credentials for payment-gateway, or Calculate 25 * 4)..."
                     disabled={chatLoading}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-cyan-500 focus:outline-none text-slate-200 text-xs disabled:opacity-50 font-sans"
                   />
                   <button
                     type="submit"
                     disabled={chatLoading || !inputMessage.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition flex items-center gap-1.5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition flex items-center gap-1.5 text-xs disabled:opacity-50"
                   >
-                    <Send className="w-3.5 h-3.5" />
                     <span>Send</span>
+                    <Send className="w-3.5 h-3.5" />
                   </button>
                 </form>
               </div>
@@ -822,11 +1223,6 @@ export default function App() {
           </>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 px-6 py-2.5 text-center text-xs text-slate-600">
-        AI Agent Security Platform &bull; Step 4 Complete (Tool Access Control & Data Leakage Prevention) &bull; 31 Tests Passing
-      </footer>
     </div>
   );
 }

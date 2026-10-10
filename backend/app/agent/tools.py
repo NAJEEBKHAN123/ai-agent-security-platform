@@ -117,6 +117,11 @@ def record_lookup(identifier: str) -> str:
     return f"No record matching '{identifier}' was found in the directory."
 
 
+def credential_rotation(service_name: str) -> str:
+    """Rotate credentials for a specified service (High-Impact Operation - Requires Reviewer Approval)."""
+    return f"Success: Security credentials for service '{service_name}' have been rotated successfully."
+
+
 # Tool Registry
 class ToolRegistry:
     def __init__(self):
@@ -141,6 +146,12 @@ class ToolRegistry:
             description="Looks up employee or asset directory records by ID (e.g., SEC-101) or Name.",
             parameters={"identifier": "string"},
             handler=record_lookup
+        )
+        self.register_tool(
+            name="credential_rotation",
+            description="Rotates credentials for internal service (Sensitive - Requires Human Approval).",
+            parameters={"service_name": "string"},
+            handler=credential_rotation
         )
 
     def register_tool(self, name: str, description: str, parameters: Dict[str, Any], handler: Callable):
